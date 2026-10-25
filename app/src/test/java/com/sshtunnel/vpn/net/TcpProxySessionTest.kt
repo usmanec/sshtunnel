@@ -110,23 +110,31 @@ class TcpProxySessionTest {
     @Test
     fun `retransmits unacknowledged data after the timeout`() {
         var now = 1_000_000L
+        // Keep the server side open until the end: an EOF would add a FIN to the packet stream
+        val release = CountDownLatch(1)
         executor.execute {
             server.accept().use { s ->
                 s.getOutputStream().write("ping".toByteArray())
-                Thread.sleep(2000)
+                release.await(10, TimeUnit.SECONDS)
             }
         }
-        val app = FakeApp()
-        val session = newSession(app, app.syn(), clock = { now })
-        session.start()
-        app.handshake(session, 65535)
-        val first = app.next()
-        assertEquals(4, first.payloadLength)
-        now += 1000
-        session.tick(now)
-        val again = app.next()
-        assertEquals(first.seq, again.seq)
-        assertArrayEquals(first.copyPayload(), again.copyPayload())
+        try {
+            val app = FakeApp()
+            val session = newSession(app, app.syn(), clock = { now })
+            session.start()
+            app.handshake(session, 65535)
+            var first = app.next()
+            while (first.payloadLength == 0) first = app.next()
+            assertEquals(4, first.payloadLength)
+            now += 1000
+            session.tick(now)
+            var again = app.next()
+            while (again.payloadLength == 0) again = app.next()
+            assertEquals(first.seq, again.seq)
+            assertArrayEquals(first.copyPayload(), again.copyPayload())
+        } finally {
+            release.countDown()
+        }
     }
 
     @Test

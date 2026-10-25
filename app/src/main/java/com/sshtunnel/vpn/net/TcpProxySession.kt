@@ -123,8 +123,9 @@ class TcpProxySession(
             socketOut = sock.getOutputStream()
             state = State.ESTABLISHED
             sndNext = ourIsn + 1
-            sendSynAckLocked()
+            // Arm the timer before the packet leaves, so the deadline never lags behind it
             armRetransmitLocked()
+            sendSynAckLocked()
             sock.getInputStream()
         }
 
@@ -151,8 +152,8 @@ class TcpProxySession(
                         val startSeq = sndNext
                         unacked.append(buffer, 0, n)
                         sndNext += n
-                        sendRangeLocked(startSeq, buffer, 0, n)
                         if (retransmitAt == 0L) armRetransmitLocked()
+                        sendRangeLocked(startSeq, buffer, 0, n)
                     }
                 }
             }
@@ -398,8 +399,8 @@ class TcpProxySession(
         finSent = true
         if (closingSince == 0L) closingSince = clock()
         sndNext += 1
-        send(sndNext - 1, rcvNext, Packets.TCP_FIN or Packets.TCP_ACK)
         if (retransmitAt == 0L) armRetransmitLocked()
+        send(sndNext - 1, rcvNext, Packets.TCP_FIN or Packets.TCP_ACK)
     }
 
     private fun sendAckLocked() = send(sndNext, rcvNext, Packets.TCP_ACK)

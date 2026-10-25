@@ -64,6 +64,7 @@ import com.sshtunnel.data.repository.VpnPrefs
 import com.sshtunnel.ui.MainViewModel
 import com.sshtunnel.ui.components.ReconnectBanner
 import com.sshtunnel.ui.components.SettingSwitchRow
+import com.sshtunnel.ui.components.TvTextField
 import com.sshtunnel.ui.theme.AmberWarning
 import com.sshtunnel.ui.theme.CyanPrimary
 import com.sshtunnel.ui.theme.DarkSurface
@@ -458,21 +459,17 @@ private fun CustomDnsInput(currentDns: String, onApply: (String, (Boolean) -> Un
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        OutlinedTextField(
+        TvTextField(
             value = input,
             onValueChange = {
                 input = it.filter { ch -> ch.isDigit() || ch == '.' }.take(15)
                 error = null
             },
-            label = { Text("Custom DNS (IPv4)") },
-            placeholder = { Text("e.g. 94.140.14.14") },
+            label = "Custom DNS (IPv4)",
+            placeholder = "e.g. 94.140.14.14",
             singleLine = true,
             isError = errorText != null,
-            supportingText = if (errorText != null) {
-                { Text(errorText, color = RedError) }
-            } else {
-                null
-            },
+            supportingText = errorText,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { apply() }),
             modifier = Modifier

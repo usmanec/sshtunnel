@@ -5,6 +5,12 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import com.sshtunnel.ui.components.ReconnectBanner
+import com.sshtunnel.ui.components.TvTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -94,6 +100,7 @@ fun AppsScreen(
     val selectedCount by viewModel.selectedAppCount.collectAsState()
 
     val tabFocusRequester = remember { FocusRequester() }
+    val focusManager = LocalFocusManager.current
     LaunchedEffect(Unit) {
         delay(150)
         try {
@@ -189,10 +196,12 @@ fun AppsScreen(
         Spacer(modifier = Modifier.height(12.dp))
 
         // Search Field
-        OutlinedTextField(
+        TvTextField(
             value = searchQuery,
             onValueChange = { viewModel.appSearchQuery.value = it },
-            placeholder = { Text("Search by name or package (e.g. Chrome, telegram)...") },
+            placeholder = "Search by name or package (e.g. Chrome, telegram)...",
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            keyboardActions = KeyboardActions(onSearch = { focusManager.moveFocus(FocusDirection.Down) }),
             leadingIcon = {
                 Icon(
                     imageVector = Icons.Default.Search,
