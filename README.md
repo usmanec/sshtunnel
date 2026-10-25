@@ -1,35 +1,84 @@
 # SSH Tunnel
 
-Android / Android TV app: a VPN over an SSH tunnel ("ssh -D") with per-app routing.
+Android / Android TV приложение для работы и тестирования мобильных приложений внутри сети
+предприятия. Трафик выбранных приложений заворачивается в стандартный SSH-проброс портов —
+тот же, что даёт команда
 
-## How traffic flows
+```bash
+ssh -D 1080 user@gateway.corp.example
+```
+
+На сервере ничего дополнительно ставить не нужно: подойдёт любой OpenSSH с разрешённым
+`AllowTcpForwarding`.
+
+## Зачем
+
+- Открыть внутренние сервисы предприятия (стенды, API, админки) из мобильного приложения так,
+  как будто телефон или ТВ-приставка находится в корпоративной сети.
+- Проверить поведение приложения через конкретный шлюз, не перенастраивая Wi-Fi и не трогая
+  остальные приложения на устройстве.
+- Дать доступ к SOCKS5-пробросу (`127.0.0.1:<порт>`) приложениям, которые умеют работать с прокси.
+
+## Возможности
+
+- **Выбор приложений:** в тоннель идут только выбранные приложения, или наоборот — все, кроме
+  выбранных.
+- **Локальная сеть напрямую:** опционально домашние/офисные адреса (10/8, 172.16/12, 192.168/16,
+  мультикаст) остаются доступными без тоннеля.
+- **DNS через тоннель:** имена резолвятся на стороне шлюза, как при `ssh -D` с удалённым резолвом.
+- **Без утечек:** пока SSH переподключается, выбранные приложения получают отказ соединения,
+  а не идут в обход.
+- **Несколько серверов:** профили с паролем или ключом (RSA, ECDSA, Ed25519), проверка
+  подключения перед сохранением.
+- **Android TV:** всё управляется пультом, автозапуск после включения приставки.
+- Статистика скорости и трафика, журнал событий.
+
+## Как это работает
 
 ```
-app (routed) ──► TUN 10.240.0.1 ──► VpnTunPacketHandler ──► SOCKS5 127.0.0.1:<port> ──► SSH direct-tcpip ──► server
+выбранное приложение ─► системный тоннель ─► локальный SOCKS5 127.0.0.1:<порт> ─► SSH direct-tcpip ─► шлюз ─► цель
 ```
 
-- **TCP (IPv4)** is terminated by a userspace TCP endpoint (`vpn/net/TcpProxySession`) and relayed
-  through the local SOCKS5 proxy into an SSH `direct-tcpip` channel.
-- **DNS** (UDP port 53, to any resolver) is sent as DNS-over-TCP through the same SOCKS5 → SSH path,
-  with a small cache.
-- **Other UDP** (QUIC, NTP, ...) gets an ICMP "port unreachable" so apps fall back to TCP immediately.
-- **IPv6** is not configured on the TUN, so Android blocks it for routed apps (no IPv6 leaks).
-- While SSH reconnects the TUN stays up: routed apps get TCP resets instead of silently using the
-  direct connection (kill switch).
-- With "Bypass Local Network" on, private ranges (10/8, 172.16/12, 192.168/16, link-local,
-  multicast) go directly to the LAN. Everything else goes through the tunnel.
+- TCP-соединения приложения завершаются на устройстве и передаются через SOCKS5 в SSH-каналы
+  `direct-tcpip` — ровно то, что делает `ssh -D`.
+- DNS-запросы (UDP 53) отправляются как DNS-over-TCP через тот же проброс.
+- Остальной UDP (QUIC и т. п.) сразу отклоняется, приложения переходят на TCP.
+- IPv6 для выбранных приложений отключён, весь трафик идёт по IPv4 через шлюз.
 
-Each SSH channel has its own flow control (`SshChannelBuffer` + `com.jcraft.jsch.ChannelWindowControl`),
-so a paused stream (e.g. a video player with a full buffer) does not stall other connections.
+Подробности — в [docs/](docs/README.md).
 
-## Android TV
+## Быстрый старт
 
-- Everything works with the remote: arrows to move, OK to select/toggle, Back returns to Home.
-- If the TV firmware has no VPN permission dialog, grant it once over ADB:
+1. Добавьте сервер: **Servers → Add Server**, укажите адрес, пользователя и пароль или ключ.
+   Нажмите **Test Connection**.
+2. Выберите приложения: **Apps** → отметьте нужные (по умолчанию в тоннель идут только они).
+3. На главном экране нажмите большую кнопку подключения и подтвердите системный запрос.
+
+### Android TV
+
+- Стрелки — перемещение, OK — выбор/переключение, Назад — на главный экран.
+- Если на приставке нет системного окна подтверждения, разрешение выдаётся один раз через ADB:
   `adb shell appops set top.rootu.ssh.tunnel ACTIVATE_VPN allow`
-- Enable "Auto-Start on Boot" or Always-on VPN in Android settings to connect after power on.
+- Для подключения после включения приставки включите **Settings → Auto-Start on Boot**.
 
-## Tests
+## Сборка
 
-`app/src/test/java/com/sshtunnel/vpn` contains plain JVM tests for packet parsing, the TCP proxy
-(windowing, retransmission, half-close), DNS caching and an end-to-end TUN → SOCKS5 → tunnel run.
+Нужны JDK 17+ и Android SDK (compileSdk 36). Проект открывается в Android Studio.
+
+```bash
+gradle :app:assembleDebug        # отладочная сборка
+gradle :app:testDebugUnitTest    # юнит-тесты
+gradle :app:assembleRelease      # релиз (R8 включён)
+```
+
+Без Android SDK (например, в облачной песочнице) код можно проверить через
+[tools/sandbox-check](docs/TESTING.md).
+
+## Документация
+
+- [AGENTS.md](AGENTS.md) — памятка для разработчиков и AI-агентов.
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — устройство приложения.
+- [docs/NETWORKING.md](docs/NETWORKING.md) — путь трафика, TCP-стек, DNS, управление потоком SSH.
+- [docs/SETTINGS.md](docs/SETTINGS.md) — настройки и где они хранятся.
+- [docs/TV_UI.md](docs/TV_UI.md) — правила UI для управления пультом.
+- [docs/TESTING.md](docs/TESTING.md) — тесты и проверка без Android SDK.
