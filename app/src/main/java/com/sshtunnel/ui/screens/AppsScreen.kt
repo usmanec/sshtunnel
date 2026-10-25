@@ -1,6 +1,10 @@
 package com.sshtunnel.ui.screens
 
-import android.graphics.drawable.Drawable
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
+import com.sshtunnel.ui.components.ReconnectBanner
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -97,11 +101,20 @@ fun AppsScreen(
         } catch (_: Exception) {}
     }
 
+    // Pick up apps installed or removed while the app was in background
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            viewModel.refreshInstalledApps()
+        }
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
             .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
+        ReconnectBanner(viewModel, modifier = Modifier.padding(bottom = 10.dp))
 
         // Routing Policy Tabs
         Card(
@@ -280,20 +293,22 @@ fun AppsScreen(
             )
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 TextButton(
-                    onClick = { viewModel.selectAllApps(true) },
+                    onClick = { viewModel.selectShownApps(true) },
+                    enabled = filteredApps.isNotEmpty(),
                     modifier = Modifier
                         .tvFocusVisual(shape = RoundedCornerShape(8.dp))
                         .testTag("select_all_apps_button")
                 ) {
-                    Text("Select All", style = MaterialTheme.typography.labelMedium.copy(color = CyanPrimary))
+                    Text("Select Shown", style = MaterialTheme.typography.labelMedium.copy(color = CyanPrimary))
                 }
                 TextButton(
-                    onClick = { viewModel.selectAllApps(false) },
+                    onClick = { viewModel.selectShownApps(false) },
+                    enabled = filteredApps.isNotEmpty(),
                     modifier = Modifier
                         .tvFocusVisual(shape = RoundedCornerShape(8.dp))
                         .testTag("deselect_all_apps_button")
                 ) {
-                    Text("Clear All", style = MaterialTheme.typography.labelMedium.copy(color = TextMuted))
+                    Text("Clear Shown", style = MaterialTheme.typography.labelMedium.copy(color = TextMuted))
                 }
             }
         }
@@ -349,11 +364,11 @@ private fun AppItemRow(
 ) {
     val context = LocalContext.current
 
-    // Load App Icon asynchronously
-    val appIcon by produceState<Drawable?>(initialValue = null, key1 = rule.packageName) {
+    // Load and rasterize the app icon once, off the main thread
+    val appIcon by produceState<ImageBitmap?>(initialValue = null, key1 = rule.packageName) {
         value = withContext(Dispatchers.IO) {
             runCatching {
-                context.packageManager.getApplicationIcon(rule.packageName)
+                context.packageManager.getApplicationIcon(rule.packageName).toBitmap(96, 96).asImageBitmap()
             }.getOrNull()
         }
     }
@@ -392,10 +407,10 @@ private fun AppItemRow(
                     .background(DarkBackground),
                 contentAlignment = Alignment.Center
             ) {
-                if (appIcon != null) {
-                    val bitmap = appIcon!!.toBitmap(96, 96)
+                val icon = appIcon
+                if (icon != null) {
                     Image(
-                        bitmap = bitmap.asImageBitmap(),
+                        bitmap = icon,
                         contentDescription = rule.appName,
                         modifier = Modifier.size(36.dp)
                     )

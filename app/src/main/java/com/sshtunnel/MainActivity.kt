@@ -1,8 +1,6 @@
 package com.sshtunnel
 
 import android.Manifest
-import android.app.UiModeManager
-import android.content.Context
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.os.Build
@@ -84,7 +82,9 @@ import com.sshtunnel.ui.theme.DarkSurface
 import com.sshtunnel.ui.theme.MyApplicationTheme
 import com.sshtunnel.ui.theme.TextMuted
 import com.sshtunnel.ui.theme.TextPrimary
+import com.sshtunnel.ui.util.isTvDevice
 import com.sshtunnel.ui.util.tvFocusVisual
+import com.sshtunnel.vpn.SshVpnService
 
 enum class NavDestination(
     val title: String,
@@ -108,6 +108,16 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    override fun onStart() {
+        super.onStart()
+        SshVpnService.isUiVisible = true
+    }
+
+    override fun onStop() {
+        SshVpnService.isUiVisible = false
+        super.onStop()
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -119,11 +129,7 @@ fun MainApp(viewModel: MainViewModel = viewModel()) {
     val vpnStatus by viewModel.vpnStatus.collectAsState()
 
     // Detect Android TV / Google TV or wide screen landscape
-    val uiModeManager = remember { context.getSystemService(Context.UI_MODE_SERVICE) as? UiModeManager }
-    val isTvMode = remember {
-        uiModeManager?.currentModeType == Configuration.UI_MODE_TYPE_TELEVISION ||
-                context.packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
-    }
+    val isTvMode = remember { isTvDevice(context) }
     val isWideLayout = isTvMode || configuration.screenWidthDp >= 640 || configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     // Request notification permission on Android 13+

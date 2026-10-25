@@ -68,8 +68,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val dnsServer: StateFlow<String> = repository.dnsServer
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "1.1.1.1")
 
-    val isolateDnsToSelectedApps: StateFlow<Boolean> = repository.isolateDnsToSelectedApps
+    val bypassLan: StateFlow<Boolean> = repository.bypassLan
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+    /**
+     * Routing settings (apps, policy, DNS, LAN bypass) are applied when the TUN interface is
+     * created. While the VPN runs, a change raises this flag so the UI can offer a reconnect.
+     */
+    private val _needsReconnect = MutableStateFlow(false)
+    val needsReconnect: StateFlow<Boolean> = _needsReconnect.asStateFlow()
+
+    private fun markRoutingChanged() {
+        if (SshVpnService.isRunning) _needsReconnect.value = true
+    }
 
     val selectedAppCount: StateFlow<Int> = repository.selectedCount
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
@@ -114,12 +125,22 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         viewModelScope.launch {
-            repository.initDefaultServerIfEmpty()
             repository.syncInstalledApps()
+        }
+        viewModelScope.launch {
+            vpnStatus.collect { status ->
+                if (status == VpnStatus.DISCONNECTED || status == VpnStatus.ERROR) _needsReconnect.value = false
+            }
         }
     }
 
+    fun refreshInstalledApps() {
+        viewModelScope.launch { repository.syncInstalledApps() }
+    }
+
+    /** Starts the VPN, or restarts it with fresh settings when it is already running. */
     fun startVpn(context: Context, serverId: Long? = null) {
+        _needsReconnect.value = false
         val intent = Intent(context, SshVpnService::class.java).apply {
             action = SshVpnService.ACTION_CONNECT
             if (serverId != null) {
@@ -140,9 +161,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         context.startService(intent)
     }
 
-    fun setActiveServer(id: Long) {
+    /**
+     * Makes [id] the active server. If the VPN is running on another server it switches over
+     * right away (no VPN permission prompt is needed while the VPN is already up).
+     */
+    fun setActiveServer(context: Context, id: Long) {
         viewModelScope.launch {
             repository.setActiveServer(id)
+            val running = SshVpnService.isRunning
+            if (running && SshVpnService.activeServer.value?.id != id) {
+                startVpn(context.applicationContext, id)
+            }
         }
     }
 
@@ -171,10 +200,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _testConnectionResult.value = null
     }
 
-    fun saveServer(server: SshServerProfile) {
+    /** Saves without a successful test (e.g. the server is temporarily unreachable). */
+    fun saveServerUnverified(context: Context, server: SshServerProfile) {
         viewModelScope.launch {
             repository.saveServer(server)
             closeServerDialog()
+            restartIfRunningOn(context, server.id)
+        }
+    }
+
+    /** Re-applies an edited profile when the VPN currently uses it. */
+    private fun restartIfRunningOn(context: Context, serverId: Long) {
+        if (serverId != 0L && SshVpnService.isRunning && SshVpnService.activeServer.value?.id == serverId) {
+            startVpn(context.applicationContext, serverId)
         }
     }
 
@@ -225,29 +263,25 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun saveServerVerified(
+        context: Context,
         profile: SshServerProfile,
         onSuccess: () -> Unit,
         onError: (String) -> Unit
     ) {
-        // If already tested and verified, save directly
-        if (isProfileVerified(profile)) {
+        val save = {
             viewModelScope.launch {
                 repository.saveServer(profile)
                 closeServerDialog()
                 onSuccess()
+                restartIfRunningOn(context, profile.id)
             }
+        }
+        // If already tested and verified, save directly, otherwise run the test first
+        if (isProfileVerified(profile)) {
+            save()
         } else {
-            // Otherwise automatically run the test first before allowing save
             testServer(profile) { success, msg ->
-                if (success) {
-                    viewModelScope.launch {
-                        repository.saveServer(profile)
-                        closeServerDialog()
-                        onSuccess()
-                    }
-                } else {
-                    onError(msg)
-                }
+                if (success) save() else onError(msg)
             }
         }
     }
@@ -275,18 +309,25 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun toggleAppSelection(packageName: String, isSelected: Boolean) {
         viewModelScope.launch {
             repository.setAppSelected(packageName, isSelected)
+            markRoutingChanged()
         }
     }
 
-    fun selectAllApps(isSelected: Boolean) {
+    /** Selects or clears the apps currently shown by the search and filter (not the hidden ones). */
+    fun selectShownApps(isSelected: Boolean) {
+        val shown = filteredApps.value.map { it.packageName }
+        if (shown.isEmpty()) return
         viewModelScope.launch {
-            repository.setAllAppsSelected(isSelected)
+            repository.setAppsSelected(shown, isSelected)
+            markRoutingChanged()
         }
     }
 
     fun setRoutingPolicy(policy: RoutingPolicy) {
+        if (policy == routingPolicy.value) return
         viewModelScope.launch {
             repository.setRoutingPolicy(policy)
+            markRoutingChanged()
         }
     }
 
@@ -308,9 +349,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun setIsolateDnsToSelectedApps(enabled: Boolean) {
+    fun setBypassLan(enabled: Boolean) {
         viewModelScope.launch {
-            repository.setIsolateDnsToSelectedApps(enabled)
+            repository.setBypassLan(enabled)
+            markRoutingChanged()
         }
     }
 
@@ -332,9 +374,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun setDnsServer(dns: String) {
+    /** Saves a valid IPv4 DNS server; [onResult] gets false for invalid input. */
+    fun setDnsServer(dns: String, onResult: (Boolean) -> Unit = {}) {
         viewModelScope.launch {
-            repository.setDnsServer(dns)
+            val changed = dns.trim() != dnsServer.value
+            val ok = repository.setDnsServer(dns)
+            if (ok && changed) markRoutingChanged()
+            onResult(ok)
         }
     }
 

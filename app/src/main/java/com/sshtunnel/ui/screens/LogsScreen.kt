@@ -35,6 +35,16 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -70,10 +80,19 @@ fun LogsScreen(
     val context = LocalContext.current
     val listState = rememberLazyListState()
 
-    // Auto-scroll to bottom on new logs
+    val scope = rememberCoroutineScope()
+
+    // Follow new entries only while the list is scrolled to the end, so reading older lines works
+    val followTail by remember {
+        derivedStateOf {
+            val info = listState.layoutInfo
+            val lastVisible = info.visibleItemsInfo.lastOrNull()?.index ?: -1
+            info.totalItemsCount == 0 || lastVisible >= info.totalItemsCount - 2
+        }
+    }
     LaunchedEffect(logs.size) {
-        if (logs.isNotEmpty()) {
-            listState.animateScrollToItem(logs.size - 1)
+        if (logs.isNotEmpty() && followTail) {
+            listState.scrollToItem(logs.size - 1)
         }
     }
 
@@ -185,11 +204,27 @@ fun LogsScreen(
                     }
                 }
             } else {
+                // Plain text rows are not focusable, so the list itself takes focus and scrolls with Up/Down
                 LazyColumn(
                     state = listState,
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(12.dp),
+                        .tvFocusVisual(shape = RoundedCornerShape(12.dp), focusedScale = 1f)
+                        .onPreviewKeyEvent { event ->
+                            if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                            when (event.key) {
+                                Key.DirectionDown -> listState.canScrollForward.also { can ->
+                                    if (can) scope.launch { listState.animateScrollBy(240f) }
+                                }
+                                Key.DirectionUp -> listState.canScrollBackward.also { can ->
+                                    if (can) scope.launch { listState.animateScrollBy(-240f) }
+                                }
+                                else -> false
+                            }
+                        }
+                        .focusable()
+                        .padding(12.dp)
+                        .testTag("logs_list"),
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     items(items = logs) { entry ->

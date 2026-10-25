@@ -55,13 +55,10 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
@@ -79,7 +76,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.foundation.layout.widthIn
+import android.content.ActivityNotFoundException
+import com.sshtunnel.ui.components.SettingSwitchRow
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
@@ -112,10 +115,12 @@ fun ServersScreen(
     val isTesting by viewModel.isTesting.collectAsState()
     val isTestSuccessful by viewModel.isTestSuccessful.collectAsState()
 
+    val context = LocalContext.current
     var serverToDelete by remember { mutableStateOf<SshServerProfile?>(null) }
     val firstServerFocusRequester = remember { FocusRequester() }
     val addFabFocusRequester = remember { FocusRequester() }
 
+    // Focus once when the screen opens and when the list size changes (add/delete)
     androidx.compose.runtime.LaunchedEffect(servers.size) {
         delay(150)
         try {
@@ -133,13 +138,43 @@ fun ServersScreen(
                 .fillMaxSize()
                 .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
-            Text(
-                text = "SSH SERVERS (${servers.size})",
-                style = MaterialTheme.typography.labelSmall.copy(
-                    color = TextMuted,
-                    letterSpacing = 0.5.sp
-                )
-            )
+            // Header with the add action on top: easy to reach with the D-pad from any card
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "SSH SERVERS (${servers.size})",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            color = TextMuted,
+                            letterSpacing = 0.5.sp
+                        )
+                    )
+                    if (servers.isNotEmpty()) {
+                        Text(
+                            text = "OK on a server makes it active (switches the running tunnel)",
+                            style = MaterialTheme.typography.labelSmall.copy(color = TextSecondary)
+                        )
+                    }
+                }
+                Button(
+                    onClick = { viewModel.openAddServerDialog() },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = CyanPrimary,
+                        contentColor = Color(0xFF001F28)
+                    ),
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier
+                        .focusRequester(addFabFocusRequester)
+                        .tvFocusVisual(shape = RoundedCornerShape(10.dp))
+                        .testTag("add_server_fab")
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Add Server", fontWeight = FontWeight.SemiBold)
+                }
+            }
             Spacer(modifier = Modifier.height(10.dp))
 
             if (servers.isEmpty()) {
@@ -162,7 +197,7 @@ fun ServersScreen(
                             style = MaterialTheme.typography.titleMedium.copy(color = TextSecondary)
                         )
                         Text(
-                            text = "Tap the + button to add and verify your server",
+                            text = "Press \"Add Server\" to add and verify your server",
                             style = MaterialTheme.typography.bodyMedium.copy(color = TextMuted)
                         )
                     }
@@ -171,35 +206,20 @@ fun ServersScreen(
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
-                    contentPadding = PaddingValues(bottom = 96.dp)
+                    contentPadding = PaddingValues(bottom = 24.dp)
                 ) {
                     items(items = servers, key = { it.id }) { server ->
                         val isFirst = servers.firstOrNull()?.id == server.id
                         ServerItemCard(
                             server = server,
                             focusRequester = if (isFirst) firstServerFocusRequester else null,
-                            onSelect = { viewModel.setActiveServer(server.id) },
+                            onSelect = { viewModel.setActiveServer(context, server.id) },
                             onEdit = { viewModel.openEditServerDialog(server) },
                             onDelete = { serverToDelete = server }
                         )
                     }
                 }
             }
-        }
-
-        // FAB to add server
-        FloatingActionButton(
-            onClick = { viewModel.openAddServerDialog() },
-            containerColor = CyanPrimary,
-            contentColor = Color(0xFF001F28),
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(20.dp)
-                .focusRequester(addFabFocusRequester)
-                .tvFocusVisual(shape = RoundedCornerShape(16.dp))
-                .testTag("add_server_fab")
-        ) {
-            Icon(Icons.Default.Add, contentDescription = "Add SSH Server")
         }
 
         // Delete Confirmation Dialog
@@ -285,18 +305,10 @@ private fun ServerItemCard(
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
-    val cardModifier = Modifier
-        .fillMaxWidth()
-        .then(if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier)
-        .tvCardFocusable(
-            shape = RoundedCornerShape(14.dp),
-            focusBorderColor = CyanPrimary,
-            focusedScale = 1.02f
-        ) { onSelect() }
-        .testTag("server_item_${server.id}")
-
     Card(
-        modifier = cardModifier,
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("server_item_${server.id}"),
         colors = CardDefaults.cardColors(
             containerColor = if (server.isActive) DarkSurfaceVariant else DarkSurface
         ),
@@ -306,19 +318,30 @@ private fun ServerItemCard(
             if (server.isActive) CyanPrimary else DarkSurfaceBorder
         )
     ) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+        // The select area and the buttons are sibling focus targets, so Left/Right on the
+        // remote moves between them (focusables nested in a focusable card are unreachable)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .then(if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier)
+                    .tvCardFocusable(
+                        shape = RoundedCornerShape(10.dp),
+                        focusBorderColor = CyanPrimary,
+                        focusedScale = 1.01f
+                    ) { onSelect() }
+                    .padding(8.dp)
+                    .testTag("select_server_${server.id}")
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.weight(1f)
-                ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = if (server.isActive) Icons.Default.RadioButtonChecked else Icons.Default.RadioButtonUnchecked,
-                        contentDescription = "Active Server",
+                        contentDescription = if (server.isActive) "Active server" else "Make active",
                         tint = if (server.isActive) CyanPrimary else TextMuted,
                         modifier = Modifier.size(20.dp)
                     )
@@ -328,7 +351,10 @@ private fun ServerItemCard(
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Bold,
                             color = TextPrimary
-                        )
+                        ),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
                     )
                     if (server.isActive) {
                         Spacer(modifier = Modifier.width(8.dp))
@@ -349,64 +375,24 @@ private fun ServerItemCard(
                     }
                 }
 
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    IconButton(
-                        onClick = onEdit,
-                        modifier = Modifier
-                            .size(48.dp)
-                            .tvFocusVisual(shape = CircleShape)
-                            .testTag("edit_server_${server.id}")
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = "Edit",
-                            tint = TextSecondary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                    IconButton(
-                        onClick = onDelete,
-                        modifier = Modifier
-                            .size(48.dp)
-                            .tvFocusVisual(shape = CircleShape)
-                            .testTag("delete_server_${server.id}")
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = "Delete",
-                            tint = RedError.copy(alpha = 0.85f),
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            // Details row
-            Text(
-                text = "${server.username}@${server.host}:${server.port}",
-                style = MaterialTheme.typography.labelMedium.copy(
-                    fontFamily = RobotoMonoFontFamily,
-                    color = TextSecondary
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "${server.username}@${server.host}:${server.port}",
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        fontFamily = RobotoMonoFontFamily,
+                        color = TextSecondary
+                    ),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
-            )
+                Spacer(modifier = Modifier.height(8.dp))
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Badges row
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Auth mode badge
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(DarkBackground)
-                        .padding(horizontal = 6.dp, vertical = 3.dp)
+                // Badges row
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Badge {
                         Icon(
                             imageVector = if (server.authType == AuthType.PASSWORD) Icons.Default.Password else Icons.Default.Key,
                             contentDescription = null,
@@ -419,53 +405,81 @@ private fun ServerItemCard(
                             style = MaterialTheme.typography.labelSmall.copy(color = TextSecondary)
                         )
                     }
-                }
-
-                // SOCKS Port badge
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(DarkBackground)
-                        .padding(horizontal = 6.dp, vertical = 3.dp)
-                ) {
-                    Text(
-                        text = "SOCKS: 127.0.0.1:${server.socksPort}",
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            fontFamily = RobotoMonoFontFamily,
-                            color = TextMuted
-                        )
-                    )
-                }
-
-                // Compression badge
-                if (server.compression) {
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(DarkBackground)
-                            .padding(horizontal = 6.dp, vertical = 3.dp)
-                    ) {
+                    Badge {
                         Text(
-                            text = "zlib",
-                            style = MaterialTheme.typography.labelSmall.copy(color = EmeraldSuccess)
+                            text = "SOCKS: 127.0.0.1:${server.socksPort}",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontFamily = RobotoMonoFontFamily,
+                                color = TextMuted
+                            )
+                        )
+                    }
+                    if (server.compression) {
+                        Badge {
+                            Text(text = "zlib", style = MaterialTheme.typography.labelSmall.copy(color = EmeraldSuccess))
+                        }
+                    }
+                    if (server.lastPingMs != null) {
+                        Text(
+                            text = "${server.lastPingMs} ms",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontFamily = RobotoMonoFontFamily,
+                                color = if (server.lastPingMs < 150) EmeraldSuccess else AmberWarning,
+                                fontWeight = FontWeight.Bold
+                            )
                         )
                     }
                 }
+            }
 
-                // Ping result
-                if (server.lastPingMs != null) {
-                    val color = if (server.lastPingMs < 150) EmeraldSuccess else AmberWarning
-                    Text(
-                        text = "${server.lastPingMs} ms",
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            fontFamily = RobotoMonoFontFamily,
-                            color = color,
-                            fontWeight = FontWeight.Bold
-                        )
+            Spacer(modifier = Modifier.width(6.dp))
+
+            // Labeled buttons: on TV the focused action must be obvious
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                TextButton(
+                    onClick = onEdit,
+                    modifier = Modifier
+                        .tvFocusVisual(shape = RoundedCornerShape(10.dp))
+                        .testTag("edit_server_${server.id}")
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = null,
+                        tint = TextSecondary,
+                        modifier = Modifier.size(18.dp)
                     )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Edit", color = TextSecondary)
+                }
+                TextButton(
+                    onClick = onDelete,
+                    modifier = Modifier
+                        .tvFocusVisual(shape = RoundedCornerShape(10.dp))
+                        .testTag("delete_server_${server.id}")
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = null,
+                        tint = RedError.copy(alpha = 0.85f),
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Delete", color = RedError.copy(alpha = 0.85f))
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun Badge(content: @Composable () -> Unit) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(4.dp))
+            .background(DarkBackground)
+            .padding(horizontal = 6.dp, vertical = 3.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) { content() }
     }
 }
 
@@ -512,6 +526,21 @@ private fun ServerEditDialog(
         }
     }
 
+    fun launchKeyPicker() {
+        try {
+            keyFilePickerLauncher.launch(arrayOf("*/*"))
+        } catch (e: ActivityNotFoundException) {
+            // Many Android TV devices ship without a document picker
+            showRawKeyField = true
+            Toast.makeText(context, "No file picker on this device. Paste the key text instead.", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    val portValid = portText.toIntOrNull()?.let { it in 1..65535 } == true
+    val socksPortValid = socksPortText.toIntOrNull()?.let { it in 1024..65535 } == true
+    val keepAliveValid = keepAliveText.toIntOrNull()?.let { it in 0..3600 } == true
+    val formValid = host.isNotBlank() && portValid && socksPortValid && keepAliveValid
+
     fun buildCurrentProfile(): SshServerProfile {
         val port = portText.toIntOrNull() ?: 22
         val socksPort = socksPortText.toIntOrNull() ?: 10808
@@ -536,14 +565,23 @@ private fun ServerEditDialog(
 
     val nameFocusRequester = remember { FocusRequester() }
     androidx.compose.runtime.LaunchedEffect(Unit) {
-        delay(150)
-        try {
-            nameFocusRequester.requestFocus()
-        } catch (_: Exception) {}
+        // New server: start typing right away. Editing: let the user pick a field with the remote
+        if (server.id == 0L) {
+            delay(150)
+            try {
+                nameFocusRequester.requestFocus()
+            } catch (_: Exception) {}
+        }
     }
+
+    val testFailed = !isTesting && !isAlreadyVerified && testResult?.startsWith("Error") == true
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+        modifier = Modifier
+            .fillMaxWidth(0.92f)
+            .widthIn(max = 720.dp),
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
@@ -589,6 +627,7 @@ private fun ServerEditDialog(
                     label = { Text("Profile Name") },
                     placeholder = { Text("e.g. Frankfurt VPS, Home Tunnel") },
                     singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                     modifier = Modifier
                         .fillMaxWidth()
                         .focusRequester(nameFocusRequester)
@@ -603,17 +642,23 @@ private fun ServerEditDialog(
                         value = host,
                         onValueChange = { host = it },
                         label = { Text("Host / IP Address") },
-                        placeholder = { Text("ssh.rootu.ssh.tunnel.com") },
+                        placeholder = { Text("ssh.example.com") },
                         singleLine = true,
-                        modifier = Modifier.weight(2f)
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Next),
+                        modifier = Modifier
+                            .weight(2f)
+                            .tvFocusVisual(shape = RoundedCornerShape(12.dp))
                     )
                     OutlinedTextField(
                         value = portText,
                         onValueChange = { portText = it.filter { ch -> ch.isDigit() } },
                         label = { Text("Port") },
                         singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.weight(1f)
+                        isError = !portValid,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
+                        modifier = Modifier
+                            .weight(1f)
+                            .tvFocusVisual(shape = RoundedCornerShape(12.dp))
                     )
                 }
 
@@ -623,7 +668,10 @@ private fun ServerEditDialog(
                     label = { Text("SSH Username") },
                     placeholder = { Text("root") },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .tvFocusVisual(shape = RoundedCornerShape(12.dp))
                 )
 
                 // Auth Type Selector
@@ -635,6 +683,7 @@ private fun ServerEditDialog(
                     Tab(
                         selected = authType == AuthType.PASSWORD,
                         onClick = { authType = AuthType.PASSWORD },
+                        modifier = Modifier.tvFocusVisual(shape = RoundedCornerShape(8.dp)),
                         text = {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(Icons.Default.Password, contentDescription = null, modifier = Modifier.size(16.dp))
@@ -646,6 +695,7 @@ private fun ServerEditDialog(
                     Tab(
                         selected = authType == AuthType.PRIVATE_KEY,
                         onClick = { authType = AuthType.PRIVATE_KEY },
+                        modifier = Modifier.tvFocusVisual(shape = RoundedCornerShape(8.dp)),
                         text = {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(Icons.Default.Key, contentDescription = null, modifier = Modifier.size(16.dp))
@@ -663,8 +713,12 @@ private fun ServerEditDialog(
                         label = { Text("Password") },
                         singleLine = true,
                         visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Next),
                         trailingIcon = {
-                            IconButton(onClick = { showPassword = !showPassword }) {
+                            IconButton(
+                                onClick = { showPassword = !showPassword },
+                                modifier = Modifier.tvFocusVisual(shape = CircleShape)
+                            ) {
                                 Icon(
                                     imageVector = if (showPassword) Icons.Default.VisibilityOff else Icons.Default.Visibility,
                                     contentDescription = "Toggle password"
@@ -706,14 +760,13 @@ private fun ServerEditDialog(
                                 }
 
                                 Button(
-                                    onClick = {
-                                        keyFilePickerLauncher.launch(arrayOf("*/*"))
-                                    },
+                                    onClick = { launchKeyPicker() },
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = CyanPrimary,
                                         contentColor = Color(0xFF001F28)
                                     ),
-                                    shape = RoundedCornerShape(8.dp)
+                                    shape = RoundedCornerShape(8.dp),
+                                    modifier = Modifier.tvFocusVisual(shape = RoundedCornerShape(8.dp))
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.FileOpen,
@@ -732,7 +785,10 @@ private fun ServerEditDialog(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    TextButton(onClick = { showRawKeyField = !showRawKeyField }) {
+                                    TextButton(
+                                        onClick = { showRawKeyField = !showRawKeyField },
+                                        modifier = Modifier.tvFocusVisual(shape = RoundedCornerShape(8.dp))
+                                    ) {
                                         Icon(
                                             imageVector = if (showRawKeyField) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
                                             contentDescription = null,
@@ -746,10 +802,13 @@ private fun ServerEditDialog(
                                         )
                                     }
 
-                                    TextButton(onClick = {
-                                        privateKey = ""
-                                        importedFileName = ""
-                                    }) {
+                                    TextButton(
+                                        onClick = {
+                                            privateKey = ""
+                                            importedFileName = ""
+                                        },
+                                        modifier = Modifier.tvFocusVisual(shape = RoundedCornerShape(8.dp))
+                                    ) {
                                         Icon(
                                             imageVector = Icons.Default.Close,
                                             contentDescription = null,
@@ -770,7 +829,9 @@ private fun ServerEditDialog(
                                         label = { Text("Private Key text (or paste directly)") },
                                         placeholder = { Text("-----BEGIN OPENSSH PRIVATE KEY-----...") },
                                         maxLines = 6,
-                                        modifier = Modifier.fillMaxWidth()
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .tvFocusVisual(shape = RoundedCornerShape(12.dp))
                                     )
                                 }
                             }
@@ -784,7 +845,10 @@ private fun ServerEditDialog(
                         placeholder = { Text("Leave blank if unencrypted") },
                         singleLine = true,
                         visualTransformation = PasswordVisualTransformation(),
-                        modifier = Modifier.fillMaxWidth()
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Next),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .tvFocusVisual(shape = RoundedCornerShape(12.dp))
                     )
                 }
 
@@ -797,31 +861,36 @@ private fun ServerEditDialog(
                         onValueChange = { socksPortText = it.filter { ch -> ch.isDigit() } },
                         label = { Text("SOCKS5 Port (-D)") },
                         singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.weight(1f)
+                        isError = !socksPortValid,
+                        supportingText = if (!socksPortValid) {
+                            { Text("1024–65535") }
+                        } else {
+                            null
+                        },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
+                        modifier = Modifier
+                            .weight(1f)
+                            .tvFocusVisual(shape = RoundedCornerShape(12.dp))
                     )
                     OutlinedTextField(
                         value = keepAliveText,
                         onValueChange = { keepAliveText = it.filter { ch -> ch.isDigit() } },
                         label = { Text("KeepAlive (sec)") },
                         singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.weight(1f)
+                        isError = !keepAliveValid,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
+                        modifier = Modifier
+                            .weight(1f)
+                            .tvFocusVisual(shape = RoundedCornerShape(12.dp))
                     )
                 }
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text("Enable Compression (zlib)", style = MaterialTheme.typography.bodyMedium)
-                    Switch(
-                        checked = compression,
-                        onCheckedChange = { compression = it },
-                        colors = SwitchDefaults.colors(checkedThumbColor = CyanPrimary)
-                    )
-                }
+                SettingSwitchRow(
+                    title = "Enable Compression (zlib)",
+                    description = "Helps on slow links with text traffic; useless for video and already compressed data",
+                    checked = compression,
+                    onCheckedChange = { compression = it }
+                )
 
                 // Dedicated Connection Test Action
                 Card(
@@ -871,7 +940,7 @@ private fun ServerEditDialog(
                                 onClick = {
                                     viewModel.testServer(currentProfile)
                                 },
-                                enabled = !isTesting && host.isNotBlank(),
+                                enabled = !isTesting && formValid,
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = if (isAlreadyVerified) EmeraldSuccess else CyanPrimary,
                                     contentColor = Color(0xFF001F28)
@@ -925,6 +994,7 @@ private fun ServerEditDialog(
             Button(
                 onClick = {
                     viewModel.saveServerVerified(
+                        context = context,
                         profile = currentProfile,
                         onSuccess = {
                             Toast.makeText(context, "Server verified and saved successfully!", Toast.LENGTH_SHORT).show()
@@ -934,7 +1004,7 @@ private fun ServerEditDialog(
                         }
                     )
                 },
-                enabled = host.isNotBlank() && !isTesting,
+                enabled = formValid && !isTesting,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = if (isAlreadyVerified) EmeraldSuccess else CyanPrimary,
                     contentColor = Color(0xFF001F28)
@@ -964,13 +1034,26 @@ private fun ServerEditDialog(
             }
         },
         dismissButton = {
-            TextButton(
-                onClick = onDismiss,
-                modifier = Modifier
-                    .tvFocusVisual(shape = RoundedCornerShape(8.dp))
-                    .testTag("cancel_edit_server_button")
-            ) {
-                Text("Cancel", style = MaterialTheme.typography.labelMedium.copy(color = TextMuted))
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                if (testFailed && formValid) {
+                    // The server may just be offline right now: allow saving anyway
+                    TextButton(
+                        onClick = { viewModel.saveServerUnverified(context, currentProfile) },
+                        modifier = Modifier
+                            .tvFocusVisual(shape = RoundedCornerShape(8.dp))
+                            .testTag("save_unverified_server_button")
+                    ) {
+                        Text("Save anyway", style = MaterialTheme.typography.labelMedium.copy(color = AmberWarning))
+                    }
+                }
+                TextButton(
+                    onClick = onDismiss,
+                    modifier = Modifier
+                        .tvFocusVisual(shape = RoundedCornerShape(8.dp))
+                        .testTag("cancel_edit_server_button")
+                ) {
+                    Text("Cancel", style = MaterialTheme.typography.labelMedium.copy(color = TextMuted))
+                }
             }
         },
         containerColor = DarkSurface

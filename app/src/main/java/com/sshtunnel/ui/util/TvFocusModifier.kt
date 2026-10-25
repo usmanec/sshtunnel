@@ -4,7 +4,6 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -52,6 +51,10 @@ fun Modifier.tvFocusVisual(
 
 /**
  * Focusable and clickable modifier for custom Cards, Rows, or Boxes on Android TV / D-Pad.
+ *
+ * `clickable` already is a single focus target that handles DPAD_CENTER/ENTER. The focus visual
+ * goes before it so its focus observer sees that target (an extra `focusable()` in front would
+ * create a second, outer focus target that swallows OK presses and never shows the highlight).
  */
 fun Modifier.tvCardFocusable(
     shape: Shape = RoundedCornerShape(12.dp),
@@ -60,11 +63,10 @@ fun Modifier.tvCardFocusable(
     focusedScale: Float = 1.03f,
     onClick: () -> Unit
 ): Modifier = this
-    .focusable()
-    .clickable(onClick = onClick)
     .tvFocusVisual(
         shape = shape,
         focusBorderColor = focusBorderColor,
         focusBorderWidth = focusBorderWidth,
         focusedScale = focusedScale
     )
+    .clickable(onClick = onClick)

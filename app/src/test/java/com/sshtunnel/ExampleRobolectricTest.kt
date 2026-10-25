@@ -70,20 +70,27 @@ class ExampleRobolectricTest {
   }
 
   @Test
-  fun `verify repository battery and dns isolation defaults`() {
+  fun `verify vpn settings defaults and dns validation`() {
     val context = ApplicationProvider.getApplicationContext<Context>()
-    val repository = com.sshtunnel.data.repository.VpnRepository(context)
+    val prefs = com.sshtunnel.data.repository.VpnPrefs.get(context)
 
-    assertEquals(true, repository.isDnsIsolatedSync())
-    assertEquals(true, repository.isScreenOffThrottlingSync())
-    assertEquals(false, repository.isAggressiveBatterySaverSync())
+    assertEquals("1.1.1.1", com.sshtunnel.data.repository.VpnPrefs.dnsServer(prefs))
+    assertEquals(true, prefs.getBoolean(com.sshtunnel.data.repository.VpnPrefs.BYPASS_LAN, true))
+    assertEquals(
+      com.sshtunnel.data.model.RoutingPolicy.ROUTE_ONLY_SELECTED,
+      com.sshtunnel.data.repository.VpnPrefs.routingPolicy(prefs)
+    )
+
+    // An invalid stored value falls back to the default instead of breaking the VPN builder
+    prefs.edit().putString(com.sshtunnel.data.repository.VpnPrefs.DNS_SERVER, "1.1.").commit()
+    assertEquals("1.1.1.1", com.sshtunnel.data.repository.VpnPrefs.dnsServer(prefs))
+    assertEquals(false, com.sshtunnel.data.repository.VpnPrefs.isValidDns("127.0.0.1"))
+    assertEquals(true, com.sshtunnel.data.repository.VpnPrefs.isValidDns("9.9.9.9"))
   }
 
   @Test
   fun `verify initial server list is empty without pre-installed server`() = kotlinx.coroutines.runBlocking {
     val context = ApplicationProvider.getApplicationContext<Context>()
-    val repository = com.sshtunnel.data.repository.VpnRepository(context)
-    repository.initDefaultServerIfEmpty()
     val db = com.sshtunnel.data.local.AppDatabase.getInstance(context)
     val active = db.serverDao().getActiveServerSync()
     assertEquals(null, active)

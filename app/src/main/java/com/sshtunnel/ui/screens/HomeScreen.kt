@@ -1,6 +1,9 @@
 package com.sshtunnel.ui.screens
 
+import android.content.ActivityNotFoundException
 import android.net.VpnService
+import android.widget.Toast
+import com.sshtunnel.vpn.SshVpnService
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateColorAsState
@@ -65,7 +68,10 @@ import kotlinx.coroutines.delay
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.sshtunnel.data.model.LogLevel
 import com.sshtunnel.data.model.RoutingPolicy
+import com.sshtunnel.ui.components.ReconnectBanner
+import androidx.compose.ui.text.style.TextAlign
 import com.sshtunnel.data.model.VpnStatus
 import com.sshtunnel.ui.MainViewModel
 import com.sshtunnel.ui.theme.AmberWarning
@@ -94,12 +100,15 @@ fun HomeScreen(
     val routingPolicy by viewModel.routingPolicy.collectAsState()
     val selectedAppCount by viewModel.selectedAppCount.collectAsState()
     val smartBatterySaver by viewModel.smartBatterySaver.collectAsState()
+    val logs by viewModel.logs.collectAsState()
 
     val vpnPrepareLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == android.app.Activity.RESULT_OK) {
             viewModel.startVpn(context, activeServer?.id)
+        } else {
+            Toast.makeText(context, "VPN permission was not granted", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -129,7 +138,7 @@ fun HomeScreen(
     val buttonColor by animateColorAsState(
         targetValue = when {
             vpnStatus == VpnStatus.CONNECTED -> EmeraldSuccess
-            vpnStatus == VpnStatus.IDLE_SUSPENDED -> AmberWarning
+            vpnStatus == VpnStatus.IDLE_SUSPENDED -> EmeraldSuccess
             isConnecting -> CyanPrimary
             vpnStatus == VpnStatus.ERROR -> RedError
             else -> CyanPrimary.copy(alpha = 0.85f)
@@ -146,8 +155,25 @@ fun HomeScreen(
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
 
+        ReconnectBanner(viewModel)
+
         // Top Status Badge
         StatusBadge(vpnStatus = vpnStatus, durationSeconds = vpnStats.connectedDurationSeconds)
+
+        // Explain failures right here: on a TV the notification shade is not visible
+        if (vpnStatus == VpnStatus.ERROR || vpnStatus == VpnStatus.RECONNECTING) {
+            val lastError = logs.lastOrNull { it.level == LogLevel.ERROR || it.level == LogLevel.WARN }
+            if (lastError != null) {
+                Text(
+                    text = lastError.message,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        color = if (vpnStatus == VpnStatus.ERROR) RedError else AmberWarning
+                    ),
+                    textAlign = TextAlign.Center,
+                    maxLines = 3
+                )
+            }
+        }
 
         // Master Power Connect Button
         Box(
@@ -194,7 +220,15 @@ fun HomeScreen(
                             } else {
                                 val prepareIntent = VpnService.prepare(context)
                                 if (prepareIntent != null) {
-                                    vpnPrepareLauncher.launch(prepareIntent)
+                                    try {
+                                        vpnPrepareLauncher.launch(prepareIntent)
+                                    } catch (e: ActivityNotFoundException) {
+                                        // Some Android TV firmwares ship without the VPN consent dialog
+                                        val hint = "This TV has no VPN permission dialog. Grant it once via ADB: " +
+                                            "adb shell appops set ${context.packageName} ACTIVATE_VPN allow"
+                                        SshVpnService.log(hint, isError = true)
+                                        Toast.makeText(context, hint, Toast.LENGTH_LONG).show()
+                                    }
                                 } else {
                                     viewModel.startVpn(context, activeServer?.id)
                                 }
@@ -226,7 +260,7 @@ fun HomeScreen(
                     Text(
                         text = when (vpnStatus) {
                             VpnStatus.CONNECTED -> "CONNECTED"
-                            VpnStatus.IDLE_SUSPENDED -> "IDLE (PAUSED)"
+                            VpnStatus.IDLE_SUSPENDED -> "CONNECTED"
                             VpnStatus.CONNECTING -> "CONNECTING"
                             VpnStatus.RECONNECTING -> "RETRYING"
                             VpnStatus.ERROR -> "RECONNECT"
@@ -262,8 +296,8 @@ fun HomeScreen(
             onManageApps = onNavigateToApps
         )
 
-        // Battery Saver Info Card
-        if (smartBatterySaver) {
+        // Idle mode info
+        if (smartBatterySaver && vpnStats.isIdleSuspended) {
             Card(
                 colors = CardDefaults.cardColors(containerColor = DarkSurfaceVariant.copy(alpha = 0.6f)),
                 shape = RoundedCornerShape(12.dp),
@@ -282,17 +316,14 @@ fun HomeScreen(
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
                         Text(
-                            text = "Smart Battery Saver Active",
+                            text = "Idle Mode",
                             style = MaterialTheme.typography.titleMedium.copy(
                                 fontWeight = FontWeight.SemiBold,
                                 color = TextPrimary
                             )
                         )
                         Text(
-                            text = if (vpnStats.isIdleSuspended)
-                                "SSH tunnel currently suspended while apps are idle. Resumes automatically on network activity."
-                            else
-                                "Stops SSH background keepalive when selected apps are idle to reduce battery drain.",
+                            text = "No traffic from routed apps right now: statistics refresh less often and latency checks are paused. The tunnel stays connected.",
                             style = MaterialTheme.typography.bodyMedium.copy(color = TextSecondary)
                         )
                     }
@@ -306,9 +337,9 @@ fun HomeScreen(
 private fun StatusBadge(vpnStatus: VpnStatus, durationSeconds: Long) {
     val (statusText, badgeColor) = when (vpnStatus) {
         VpnStatus.CONNECTED -> "ACTIVE • ${formatDuration(durationSeconds)}" to EmeraldSuccess
-        VpnStatus.IDLE_SUSPENDED -> "IDLE (BATTERY SAVER)" to AmberWarning
+        VpnStatus.IDLE_SUSPENDED -> "ACTIVE (IDLE) • ${formatDuration(durationSeconds)}" to EmeraldSuccess
         VpnStatus.CONNECTING -> "CONNECTING TO SSH..." to CyanPrimary
-        VpnStatus.RECONNECTING -> "RECONNECTING..." to AmberWarning
+        VpnStatus.RECONNECTING -> "RECONNECTING (APPS BLOCKED)..." to AmberWarning
         VpnStatus.ERROR -> "CONNECTION FAILED" to RedError
         VpnStatus.DISCONNECTED -> "DISCONNECTED" to TextMuted
     }

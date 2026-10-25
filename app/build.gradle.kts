@@ -64,6 +64,12 @@ android {
     buildConfig = true
   }
   testOptions { unitTests { isIncludeAndroidResources = true } }
+  packaging {
+    resources {
+      // JSch and BouncyCastle are multi-release jars with identical OSGi manifests
+      excludes += "/META-INF/versions/*/OSGI-INF/MANIFEST.MF"
+    }
+  }
   dependenciesInfo {
     includeInApk = false
     includeInBundle = true
@@ -99,6 +105,8 @@ dependencies {
   implementation(libs.androidx.room.ktx)
   implementation(libs.androidx.room.runtime)
   implementation(libs.mwiede.jsch)
+  // Ed25519 keys and curve25519 key exchange in JSch on Android
+  implementation(libs.bouncycastle.bcprov)
   implementation(libs.kotlinx.coroutines.android)
   implementation(libs.kotlinx.coroutines.core)
   testImplementation(libs.androidx.compose.ui.test.junit4)

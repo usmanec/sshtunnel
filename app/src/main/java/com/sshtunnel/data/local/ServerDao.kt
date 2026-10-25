@@ -45,6 +45,9 @@ interface ServerDao {
         setActive(id)
     }
 
+    @Query("SELECT id FROM ssh_servers ORDER BY createdAt DESC LIMIT 1")
+    suspend fun getNewestServerId(): Long?
+
     @Query("UPDATE ssh_servers SET lastPingMs = :pingMs WHERE id = :id")
     suspend fun updatePing(id: Long, pingMs: Long?)
 }
