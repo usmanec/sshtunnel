@@ -1,0 +1,6 @@
+{
+  "name": "SSH Tunnel",
+  "description": "VPN service over SSH tunnel with per-app split tunneling, dynamic SOCKS proxy, traffic statistics, and battery saver mode.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
