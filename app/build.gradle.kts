@@ -1,15 +1,11 @@
-import com.google.gms.googleservices.GoogleServicesPlugin.MissingGoogleServicesStrategy
-
 plugins {
   alias(libs.plugins.android.application)
   alias(libs.plugins.kotlin.compose)
   alias(libs.plugins.google.devtools.ksp)
-  alias(libs.plugins.secrets)
-  alias(libs.plugins.google.services)
 }
 
 android {
-  namespace = "com.sshtunnel"
+  namespace = "top.rootu.ssh.tunnel"
   compileSdk { version = release(36) { minorApiLevel = 1 } }
 
   defaultConfig {
@@ -43,7 +39,10 @@ android {
   buildTypes {
     release {
       isCrunchPngs = false
-      isMinifyEnabled = false
+      // R8 removes unused code (most of material-icons-extended, Compose, BouncyCastle);
+      // keep rules for JSch reflection are in proguard-rules.pro
+      isMinifyEnabled = true
+      isShrinkResources = true
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
       // Do not remove or modify this signingConfig assignment. It is necessary for Android apps in
       // AI Studio.
@@ -64,55 +63,39 @@ android {
     buildConfig = true
   }
   testOptions { unitTests { isIncludeAndroidResources = true } }
+  packaging {
+    resources {
+      // JSch and BouncyCastle are multi-release jars with identical OSGi manifests
+      excludes += "/META-INF/versions/*/OSGI-INF/MANIFEST.MF"
+    }
+  }
   dependenciesInfo {
     includeInApk = false
     includeInBundle = true
   }
 }
 
-// Configure the Secrets Gradle Plugin to use .env and .env.sshtunnel files
-// to match the convention used in Web projects.
-secrets {
-  propertiesFileName = ".env"
-  defaultPropertiesFileName = ".env.example"
-  ignoreList.add("FIREBASE_APPCHECK_DEBUG_TOKEN")
-}
-
-googleServices { missingGoogleServicesStrategy = MissingGoogleServicesStrategy.WARN }
-
-// Some unused dependencies are commented out below instead of being removed.
-// This makes it easy to add them back in the future if needed.
 dependencies {
   implementation(platform(libs.androidx.compose.bom))
   implementation(libs.androidx.activity.compose)
-  implementation(libs.androidx.compose.material.icons.core)
+  // Includes material-icons-core; unused icons are stripped by R8 in release builds
   implementation(libs.androidx.compose.material.icons.extended)
   implementation(libs.androidx.compose.material3)
   implementation(libs.androidx.compose.ui)
-  implementation(libs.androidx.compose.ui.graphics)
-  implementation(libs.androidx.compose.ui.tooling.preview)
   implementation(libs.androidx.core.ktx)
   implementation(libs.androidx.lifecycle.runtime.compose)
   implementation(libs.androidx.lifecycle.runtime.ktx)
   implementation(libs.androidx.lifecycle.viewmodel.compose)
-  implementation(libs.androidx.navigation.compose)
   implementation(libs.androidx.room.ktx)
   implementation(libs.androidx.room.runtime)
   implementation(libs.mwiede.jsch)
+  // Ed25519 keys and curve25519 key exchange in JSch on Android
+  implementation(libs.bouncycastle.bcprov)
   implementation(libs.kotlinx.coroutines.android)
-  implementation(libs.kotlinx.coroutines.core)
-  testImplementation(libs.androidx.compose.ui.test.junit4)
   testImplementation(libs.androidx.core)
-  testImplementation(libs.androidx.junit)
   testImplementation(libs.junit)
-  testImplementation(libs.kotlinx.coroutines.test)
   testImplementation(libs.robolectric)
-  androidTestImplementation(platform(libs.androidx.compose.bom))
-  androidTestImplementation(libs.androidx.compose.ui.test.junit4)
-  androidTestImplementation(libs.androidx.espresso.core)
   androidTestImplementation(libs.androidx.junit)
   androidTestImplementation(libs.androidx.runner)
-  debugImplementation(libs.androidx.compose.ui.test.manifest)
-  debugImplementation(libs.androidx.compose.ui.tooling)
   "ksp"(libs.androidx.room.compiler)
 }

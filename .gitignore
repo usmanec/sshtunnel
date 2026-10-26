@@ -17,3 +17,6 @@
 local.properties
 .env
 debug.keystore
+
+# Sandbox compile/test harness output
+tools/sandbox-check/*/build/
