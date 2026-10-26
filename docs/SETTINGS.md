@@ -25,7 +25,9 @@
 |---|---|---|
 | `host`, `port` | —, `22` | порт 1–65535 |
 | `username` | `root` | |
-| `authType` | `PASSWORD` | `PASSWORD` или `PRIVATE_KEY` (OpenSSH/PEM, RSA/ECDSA/Ed25519, опц. passphrase) |
+| `authType` | `PASSWORD` | `PASSWORD`, `PRIVATE_KEY` или `PRIVATE_KEY_AND_PASSWORD` (имя хранится в Room — не переименовывать) |
+| `privateKey`, `passphrase` | | ключ OpenSSH/PEM (RSA/ECDSA/Ed25519); `passphrase` — только для зашифрованного ключа |
+| `password` | | для `PASSWORD` и `PRIVATE_KEY_AND_PASSWORD`; неиспользуемые выбранным типом секреты при сохранении очищаются |
 | `socksPort` | `10808` | локальный SOCKS5, 1024–65535 |
 | `compression` | `false` | zlib; бесполезен для видео/сжатых данных |
 | `keepAliveIntervalSeconds` | `15` | 0–3600, 0 — без keepalive |

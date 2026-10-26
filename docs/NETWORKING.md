@@ -74,6 +74,16 @@ Userspace TCP-конечная точка на каждое соединение
 - Шифры: AES-GCM в приоритете, затем AES-CTR. TCP_NODELAY и keepalive на сокете, `protect()`.
 - Keepalive: интервал из профиля (режим экономии — не меньше 60 с), 3 пропуска = обрыв.
   `setServerAliveInterval` вызывается **после** установки `timeout`.
+- Аутентификация задаётся `AuthType.sshMethods` (`PreferredAuthentications`), ключ всегда раньше
+  пароля: `PASSWORD` → `password,keyboard-interactive`; `PRIVATE_KEY` → `publickey`;
+  `PRIVATE_KEY_AND_PASSWORD` → `publickey,password,keyboard-interactive`. Последний вариант
+  работает и как запасной (ключ не принят — пробуется пароль), и для серверов с
+  `AuthenticationMethods publickey,password` (нужны оба: после частичного успеха по ключу сервер
+  просит пароль).
+- `PasswordPromptAnswerer` отвечает на `keyboard-interactive` сохранённым паролем, если запрос один
+  и скрытый. Без него JSch отвечает только на запрос, содержащий `password:`. OTP и многошаговые
+  запросы не поддерживаются (будет «Auth fail»).
+- Зашифрованный ключ расшифровывается заранее: `addIdentity(..., passphrase)`.
 - Ошибки аутентификации (`isPermanentFailure`) не повторяются.
 - `disconnect()` прерывает и идущее подключение (закрывает сокет фабрики).
 

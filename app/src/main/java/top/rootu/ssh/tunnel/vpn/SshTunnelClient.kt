@@ -6,7 +6,8 @@ import com.jcraft.jsch.JSch
 import com.jcraft.jsch.JSchException
 import com.jcraft.jsch.Session
 import com.jcraft.jsch.SocketFactory
-import top.rootu.ssh.tunnel.data.model.AuthType
+import com.jcraft.jsch.UIKeyboardInteractive
+import com.jcraft.jsch.UserInfo
 import top.rootu.ssh.tunnel.data.model.SshServerProfile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -179,23 +180,22 @@ class SshTunnelClient(
 
     private fun createSession(profile: SshServerProfile, timeoutMs: Int): Session {
         val jsch = JSch()
-        if (profile.authType == AuthType.PRIVATE_KEY && profile.privateKey.isNotBlank()) {
+        val authType = profile.authType
+        if (authType.usesKey && profile.privateKey.isNotBlank()) {
             val keyBytes = profile.privateKey.trim().toByteArray(Charsets.UTF_8)
             val passphraseBytes = profile.passphrase.takeIf { it.isNotEmpty() }?.toByteArray(Charsets.UTF_8)
             jsch.addIdentity("ssh_tunnel_key", keyBytes, null, passphraseBytes)
         }
 
         val newSession = jsch.getSession(profile.username, profile.host, profile.port)
-        if (profile.authType == AuthType.PASSWORD && profile.password.isNotEmpty()) {
+        if (authType.usesPassword && profile.password.isNotEmpty()) {
             newSession.setPassword(profile.password)
+            newSession.userInfo = PasswordPromptAnswerer(profile.password)
         }
 
         val config = Properties().apply {
             put("StrictHostKeyChecking", "no")
-            put(
-                "PreferredAuthentications",
-                if (profile.authType == AuthType.PASSWORD) "password,keyboard-interactive" else "publickey"
-            )
+            put("PreferredAuthentications", authType.sshMethods)
             // AES-GCM first: hardware-accelerated by Android's crypto provider and needs no separate MAC
             val ciphers = "aes128-gcm@openssh.com,aes256-gcm@openssh.com,aes128-ctr,aes192-ctr,aes256-ctr"
             put("cipher.s2c", ciphers)
@@ -250,4 +250,31 @@ class SshTunnelClient(
             // Ignore
         }
     }
+}
+
+/**
+ * Answers "keyboard-interactive" with the saved password. Without it JSch only does so when the
+ * prompt literally contains "password:", so prompts like "Password for user@host" fail.
+ * Only a single hidden prompt is answered; anything else (OTP, several questions) is cancelled.
+ */
+private class PasswordPromptAnswerer(private val password: String) : UserInfo, UIKeyboardInteractive {
+    override fun promptKeyboardInteractive(
+        destination: String?,
+        name: String?,
+        instruction: String?,
+        prompt: Array<out String>?,
+        echo: BooleanArray?
+    ): Array<String>? {
+        if (prompt == null || echo == null) return null
+        if (prompt.isEmpty()) return emptyArray()
+        return if (prompt.size == 1 && !echo[0]) arrayOf(password) else null
+    }
+
+    // The password is passed to the session up front: no interactive prompts
+    override fun getPassword(): String? = null
+    override fun getPassphrase(): String? = null
+    override fun promptPassword(message: String?): Boolean = false
+    override fun promptPassphrase(message: String?): Boolean = false
+    override fun promptYesNo(message: String?): Boolean = false
+    override fun showMessage(message: String?) {}
 }

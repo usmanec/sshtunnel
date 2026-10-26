@@ -58,8 +58,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -79,6 +77,12 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.window.DialogProperties
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.material.icons.filled.VpnKey
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.widthIn
@@ -402,14 +406,14 @@ private fun ServerItemCard(
                 ) {
                     Badge {
                         Icon(
-                            imageVector = if (server.authType == AuthType.PASSWORD) Icons.Default.Password else Icons.Default.Key,
+                            imageVector = authOption(server.authType).icon,
                             contentDescription = null,
                             tint = TextMuted,
                             modifier = Modifier.size(12.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = if (server.authType == AuthType.PASSWORD) "Password" else "Key",
+                            text = authOption(server.authType).label,
                             style = MaterialTheme.typography.labelSmall.copy(color = TextSecondary)
                         )
                     }
@@ -491,6 +495,7 @@ private fun Badge(content: @Composable () -> Unit) {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ServerEditDialog(
     server: SshServerProfile,
@@ -547,7 +552,10 @@ private fun ServerEditDialog(
     val portValid = portText.toIntOrNull()?.let { it in 1..65535 } == true
     val socksPortValid = socksPortText.toIntOrNull()?.let { it in 1024..65535 } == true
     val keepAliveValid = keepAliveText.toIntOrNull()?.let { it in 0..3600 } == true
-    val formValid = host.isNotBlank() && portValid && socksPortValid && keepAliveValid
+    val keyValid = !authType.usesKey || privateKey.isNotBlank()
+    // With key + password both are required; a plain password may be empty (rare "none"-style setups)
+    val passwordValid = authType != AuthType.PRIVATE_KEY_AND_PASSWORD || password.isNotEmpty()
+    val formValid = host.isNotBlank() && portValid && socksPortValid && keepAliveValid && keyValid && passwordValid
 
     fun buildCurrentProfile(): SshServerProfile {
         val port = portText.toIntOrNull() ?: 22
@@ -559,9 +567,10 @@ private fun ServerEditDialog(
             port = port,
             username = username.trim().ifBlank { "root" },
             authType = authType,
-            password = password,
-            privateKey = privateKey.trim(),
-            passphrase = passphrase,
+            // Do not keep secrets the selected method does not use
+            password = if (authType.usesPassword) password else "",
+            privateKey = if (authType.usesKey) privateKey.trim() else "",
+            passphrase = if (authType.usesKey) passphrase else "",
             socksPort = socksPort,
             compression = compression,
             keepAliveIntervalSeconds = keepAlive
@@ -678,60 +687,33 @@ private fun ServerEditDialog(
                         .tvFocusVisual(shape = RoundedCornerShape(12.dp))
                 )
 
-                // Auth Type Selector
-                TabRow(
-                    selectedTabIndex = if (authType == AuthType.PASSWORD) 0 else 1,
-                    containerColor = DarkSurfaceVariant,
-                    contentColor = CyanPrimary
-                ) {
-                    Tab(
-                        selected = authType == AuthType.PASSWORD,
-                        onClick = { authType = AuthType.PASSWORD },
-                        modifier = Modifier.tvFocusVisual(shape = RoundedCornerShape(8.dp)),
-                        text = {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.Password, contentDescription = null, modifier = Modifier.size(16.dp))
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("Password")
-                            }
-                        }
-                    )
-                    Tab(
-                        selected = authType == AuthType.PRIVATE_KEY,
-                        onClick = { authType = AuthType.PRIVATE_KEY },
-                        modifier = Modifier.tvFocusVisual(shape = RoundedCornerShape(8.dp)),
-                        text = {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.Key, contentDescription = null, modifier = Modifier.size(16.dp))
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("SSH Key File")
-                            }
-                        }
-                    )
+                // Authentication: one selector, then only the fields it needs (key first, then password)
+                Text(
+                    text = "Authentication",
+                    style = MaterialTheme.typography.labelMedium.copy(color = TextSecondary)
+                )
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    AUTH_OPTIONS.forEach { option ->
+                        FilterChip(
+                            selected = authType == option.type,
+                            onClick = { authType = option.type },
+                            label = { Text(option.label) },
+                            leadingIcon = {
+                                Icon(option.icon, contentDescription = null, modifier = Modifier.size(16.dp))
+                            },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = CyanPrimary.copy(alpha = 0.2f),
+                                selectedLabelColor = CyanPrimary,
+                                selectedLeadingIconColor = CyanPrimary
+                            ),
+                            modifier = Modifier
+                                .tvFocusVisual(shape = RoundedCornerShape(8.dp))
+                                .testTag("auth_type_${option.type.name.lowercase()}")
+                        )
+                    }
                 }
 
-                if (authType == AuthType.PASSWORD) {
-                    TvTextField(
-                        value = password,
-                        onValueChange = { password = it },
-                        label = "Password",
-                        singleLine = true,
-                        visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Next),
-                        trailingIcon = {
-                            IconButton(
-                                onClick = { showPassword = !showPassword },
-                                modifier = Modifier.tvFocusVisual(shape = CircleShape)
-                            ) {
-                                Icon(
-                                    imageVector = if (showPassword) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                                    contentDescription = "Toggle password"
-                                )
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                } else {
+                if (authType.usesKey) {
                     // File Picker for Private Key
                     Card(
                         colors = CardDefaults.cardColors(containerColor = DarkSurfaceVariant),
@@ -845,14 +827,37 @@ private fun ServerEditDialog(
                     TvTextField(
                         value = passphrase,
                         onValueChange = { passphrase = it },
-                        label = "Key Passphrase (optional)",
-                        placeholder = "Leave blank if unencrypted",
+                        label = "Key Passphrase (only for an encrypted key)",
+                        placeholder = "Leave blank if the key is not encrypted",
                         singleLine = true,
                         visualTransformation = PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Next),
                         modifier = Modifier
                             .fillMaxWidth()
                             .tvFocusVisual(shape = RoundedCornerShape(12.dp))
+                    )
+                }
+
+                if (authType.usesPassword) {
+                    TvTextField(
+                        value = password,
+                        onValueChange = { password = it },
+                        label = if (authType.usesKey) "Password (sent after the key)" else "Password",
+                        singleLine = true,
+                        visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Next),
+                        trailingIcon = {
+                            IconButton(
+                                onClick = { showPassword = !showPassword },
+                                modifier = Modifier.tvFocusVisual(shape = CircleShape)
+                            ) {
+                                Icon(
+                                    imageVector = if (showPassword) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                    contentDescription = "Toggle password"
+                                )
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
 
@@ -1103,3 +1108,13 @@ private fun FullScreenEditor(
         }
     }
 }
+
+private class AuthOption(val type: AuthType, val label: String, val icon: ImageVector)
+
+private val AUTH_OPTIONS = listOf(
+    AuthOption(AuthType.PASSWORD, "Password", Icons.Default.Password),
+    AuthOption(AuthType.PRIVATE_KEY, "Private key", Icons.Default.Key),
+    AuthOption(AuthType.PRIVATE_KEY_AND_PASSWORD, "Key + password", Icons.Default.VpnKey)
+)
+
+private fun authOption(type: AuthType) = AUTH_OPTIONS.first { it.type == type }
