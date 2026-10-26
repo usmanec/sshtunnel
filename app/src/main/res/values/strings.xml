@@ -65,6 +65,15 @@
     <string name="no_apps_hint">No apps selected. Choose the apps to route through SSH.</string>
     <string name="btn_select_apps">Select Apps</string>
 
+    <!-- External IP -->
+    <string name="ext_ip_title">EXTERNAL IP</string>
+    <string name="ext_ip_via_tunnel">via tunnel</string>
+    <string name="ext_ip_direct">direct</string>
+    <string name="ext_ip_loading">Detecting…</string>
+    <string name="ext_ip_failed">Could not detect the external IP</string>
+    <string name="ext_ip_unknown_location">Location unknown</string>
+    <string name="cd_refresh_ip">Refresh external IP</string>
+
     <!-- Servers -->
     <string name="servers_header">SSH SERVERS (%1$d)</string>
     <string name="servers_hint">OK on a server makes it active (switches the running tunnel)</string>

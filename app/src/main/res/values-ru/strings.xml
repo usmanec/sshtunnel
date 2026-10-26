@@ -63,6 +63,15 @@
     <string name="no_apps_hint">Приложения не выбраны. Выберите, какие приложения пустить через SSH.</string>
     <string name="btn_select_apps">Выбрать</string>
 
+    <!-- External IP -->
+    <string name="ext_ip_title">ВНЕШНИЙ IP</string>
+    <string name="ext_ip_via_tunnel">через тоннель</string>
+    <string name="ext_ip_direct">напрямую</string>
+    <string name="ext_ip_loading">Определение…</string>
+    <string name="ext_ip_failed">Не удалось определить внешний IP</string>
+    <string name="ext_ip_unknown_location">Местоположение неизвестно</string>
+    <string name="cd_refresh_ip">Обновить внешний IP</string>
+
     <!-- Серверы -->
     <string name="servers_header">SSH-СЕРВЕРЫ (%1$d)</string>
     <string name="servers_hint">OK на сервере делает его активным (работающий тоннель переключится)</string>

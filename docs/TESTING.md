@@ -9,6 +9,7 @@
 | `vpn/net/DnsMessagesTest` | ключ кэша, TTL, TC-усечение, истечение кэша |
 | `vpn/net/ByteQueueTest` | буфер неподтверждённых данных |
 | `vpn/net/TcpProxySessionTest` | рукопожатие, полузакрытие, окно клиента, повтор, дубли, RST, нулевое окно |
+| `vpn/net/GeoIpLookupTest` | внешний IP: перебор сервисов, локализация страны, разбор JSON и HTTP (chunked, ошибки) |
 | `vpn/SocksTunnelEndToEndTest` | TCP приложения → TcpProxySession → SOCKS5 → транспорт; отказ при упавшем транспорте |
 | `ExampleRobolectricTest` | дефолты настроек, форматирование статистики, английский по умолчанию и русский перевод (Robolectric, `@Config(qualifiers = "ru")`) |
 | `data/model/AuthTypeTest` | порядок методов входа (ключ раньше пароля), стабильность имён в Room |

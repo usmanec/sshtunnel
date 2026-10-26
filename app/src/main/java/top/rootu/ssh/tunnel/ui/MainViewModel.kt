@@ -16,6 +16,12 @@ import top.rootu.ssh.tunnel.data.repository.VpnRepository
 import top.rootu.ssh.tunnel.vpn.SshTunnelClient
 import top.rootu.ssh.tunnel.vpn.SshVpnService
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import top.rootu.ssh.tunnel.vpn.net.GeoIpInfo
+import top.rootu.ssh.tunnel.vpn.net.GeoIpLookup
+import top.rootu.ssh.tunnel.vpn.net.Socks5Client
+import java.net.InetSocketAddress
+import java.net.Socket
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -31,6 +37,8 @@ enum class AppFilterMode {
     SYSTEM_ONLY,
     SELECTED_ONLY
 }
+
+private const val EXTERNAL_IP_TTL_MS = 5 * 60_000L
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val app: Application = application
@@ -392,6 +400,64 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val ok = repository.setDnsServer(dns)
             if (ok && changed) markRoutingChanged()
             onResult(ok)
+        }
+    }
+
+    // External IP and location shown on Home
+
+    data class ExternalIpState(
+        val loading: Boolean = false,
+        val info: GeoIpInfo? = null,
+        val viaTunnel: Boolean = false,
+        val failed: Boolean = false
+    )
+
+    private val _externalIp = MutableStateFlow(ExternalIpState())
+    val externalIp: StateFlow<ExternalIpState> = _externalIp.asStateFlow()
+    private var externalIpJob: Job? = null
+    private var externalIpKey: String? = null
+    private var externalIpCheckedAt = 0L
+
+    /**
+     * Looks up the external IP. While the tunnel is up the request goes through the local SOCKS5
+     * proxy (our own app is excluded from the tunnel), so it shows the SSH server's exit address;
+     * otherwise the direct one. Results are reused for a few minutes unless [force] is set.
+     */
+    fun refreshExternalIp(force: Boolean = false) {
+        val status = vpnStatus.value
+        val connected = status == VpnStatus.CONNECTED || status == VpnStatus.IDLE_SUSPENDED
+        // While connecting or reconnecting the path is about to change: keep what is shown
+        if (!connected && status != VpnStatus.DISCONNECTED && status != VpnStatus.ERROR) return
+        val server = if (connected) SshVpnService.activeServer.value ?: return else null
+        val key = server?.let { "tunnel:${it.id}:${it.socksPort}" } ?: "direct"
+        val fresh = System.currentTimeMillis() - externalIpCheckedAt < EXTERNAL_IP_TTL_MS
+        if (!force && key == externalIpKey && fresh && _externalIp.value.info != null) return
+
+        val sameKey = key == externalIpKey
+        externalIpKey = key
+        externalIpJob?.cancel()
+        _externalIp.value = ExternalIpState(
+            loading = true,
+            info = if (sameKey) _externalIp.value.info else null,
+            viaTunnel = server != null
+        )
+        val connector: (String, Int) -> Socket = if (server != null) {
+            { host, port -> Socks5Client.connectHost(server.socksPort, host, port, 15_000) }
+        } else {
+            { host, port -> Socket().apply { connect(InetSocketAddress(host, port), 10_000) } }
+        }
+        val language = app.resources.configuration.locales[0].language
+        externalIpJob = viewModelScope.launch {
+            val result = withContext(Dispatchers.IO) {
+                runCatching { GeoIpLookup(connector, language).lookup() }
+            }
+            externalIpCheckedAt = if (result.isSuccess) System.currentTimeMillis() else 0L
+            _externalIp.value = ExternalIpState(
+                loading = false,
+                info = result.getOrNull(),
+                viaTunnel = server != null,
+                failed = result.isFailure
+            )
         }
     }
 

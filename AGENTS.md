@@ -54,7 +54,7 @@ app/src/main/java/
     │   ├── SshChannelBuffer     Неблокирующий приёмный буфер канала с управлением окном SSH
     │   ├── TunnelTransport      Интерфейс транспорта (SSH в проде, фейк в тестах)
     │   └── net/                 Чистый Kotlin без Android: Packets, TcpProxySession, Socks5Client,
-    │                            DnsMessages/DnsCache, Cidr, ByteQueue
+    │                            DnsMessages/DnsCache, Cidr, ByteQueue, GeoIpLookup (внешний IP)
     ├── receiver/BootReceiver    Автозапуск после загрузки
     └── ui/
         ├── MainViewModel.kt     Единая VM для всех экранов
