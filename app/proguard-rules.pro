@@ -31,4 +31,4 @@
 -dontwarn org.slf4j.**
 -dontwarn javax.naming.**
 # Enum names are persisted (Room converter, SharedPreferences)
--keep enum com.sshtunnel.data.model.** { *; }
+-keep enum top.rootu.ssh.tunnel.data.model.** { *; }

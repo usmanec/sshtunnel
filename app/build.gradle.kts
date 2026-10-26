@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-  namespace = "com.sshtunnel"
+  namespace = "top.rootu.ssh.tunnel"
   compileSdk { version = release(36) { minorApiLevel = 1 } }
 
   defaultConfig {

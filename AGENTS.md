@@ -5,7 +5,7 @@
 
 ## Что это за проект
 
-SSH Tunnel (`applicationId = top.rootu.ssh.tunnel`, `namespace = com.sshtunnel`) — приложение для
+SSH Tunnel (`applicationId` и `namespace` — `top.rootu.ssh.tunnel`) — приложение для
 Android и Android TV (minSdk 24, targetSdk/compileSdk 36). Оно заворачивает трафик выбранных
 приложений в SSH-проброс `ssh -D`: системный тоннель (Android `VpnService`) → собственный
 userspace TCP/IP → локальный SOCKS5 → SSH-каналы `direct-tcpip` (JSch).
@@ -40,7 +40,7 @@ gradle :app:assembleRelease     # R8 + shrinkResources включены
 ```
 app/src/main/java/
 ├── com/jcraft/jsch/ChannelWindowControl.java   Доступ к package-private окну канала JSch (см. NETWORKING)
-└── com/sshtunnel/
+└── top/rootu/ssh/tunnel/
     ├── MainActivity.kt          Навигация (NavigationRail на ТВ/широких экранах, BottomBar на телефоне)
     ├── data/
     │   ├── model/               SshServerProfile, AppRoutingRule, VpnStats/VpnStatus, лог
@@ -89,7 +89,7 @@ app/src/main/java/
 - **Состояние жизненного цикла `SshVpnService` меняется только в главном потоке**
   (`serviceScope` на `Dispatchers.Main.immediate`), блокирующее — в `withContext(IO)`.
 - **Сетевое ядро (`vpn/net`) — без Android-зависимостей**, чтобы тестироваться на JVM.
-  Новая логика пакетов/TCP/DNS покрывается тестами в `app/src/test/java/com/sshtunnel/vpn`.
+  Новая логика пакетов/TCP/DNS покрывается тестами в `app/src/test/java/top/rootu/ssh/tunnel/vpn`.
 - **Ключи настроек** — только через `VpnPrefs`. Меняется смысл ключа → новый ключ + миграция,
   старый не переиспользовать. Новая настройка проходит путь: `VpnPrefs` → `VpnRepository` →
   `MainViewModel` → `SettingsScreen`, а если влияет на TUN — `markRoutingChanged()`.

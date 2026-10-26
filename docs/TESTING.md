@@ -32,7 +32,7 @@ cd tools/sandbox-check/net-tests && gradle --no-daemon test
 cd tools/sandbox-check/compile && gradle --no-daemon compileKotlin compileJava
 ```
 
-- `net-tests` — запускает тесты из `app/src/test/java/com/sshtunnel/vpn` на чистой JVM
+- `net-tests` — запускает тесты из `app/src/test/java/top/rootu/ssh/tunnel/vpn` на чистой JVM
   (компилирует только `vpn/net/*`, `Socks5ProxyServer.kt`, `TunnelTransport.kt`).
 - `compile` — компилирует **все** исходники `app/src/main` против Robolectric `android-all`
   (классы Android) и JetBrains Compose Desktop 1.7 (тот же API, что androidx Compose 1.7 /
