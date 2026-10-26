@@ -66,6 +66,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
+import androidx.annotation.StringRes
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -87,15 +89,16 @@ import top.rootu.ssh.tunnel.ui.util.tvFocusVisual
 import top.rootu.ssh.tunnel.vpn.SshVpnService
 
 enum class NavDestination(
-    val title: String,
+    @StringRes val label: Int,
+    @StringRes val title: Int,
     val selectedIcon: ImageVector,
     val unselectedIcon: ImageVector
 ) {
-    HOME("Home", Icons.Filled.Security, Icons.Outlined.Security),
-    APPS("Apps", Icons.Filled.Apps, Icons.Outlined.Apps),
-    SERVERS("Servers", Icons.Filled.Dns, Icons.Outlined.Dns),
-    LOGS("Logs", Icons.Filled.Terminal, Icons.Outlined.Terminal),
-    SETTINGS("Settings", Icons.Filled.Settings, Icons.Outlined.Settings)
+    HOME(R.string.nav_home, R.string.app_name, Icons.Filled.Security, Icons.Outlined.Security),
+    APPS(R.string.nav_apps, R.string.title_apps, Icons.Filled.Apps, Icons.Outlined.Apps),
+    SERVERS(R.string.nav_servers, R.string.title_servers, Icons.Filled.Dns, Icons.Outlined.Dns),
+    LOGS(R.string.nav_logs, R.string.title_logs, Icons.Filled.Terminal, Icons.Outlined.Terminal),
+    SETTINGS(R.string.nav_settings, R.string.title_settings, Icons.Filled.Settings, Icons.Outlined.Settings)
 }
 
 class MainActivity : ComponentActivity() {
@@ -173,7 +176,7 @@ fun MainApp(viewModel: MainViewModel = viewModel()) {
                         ) {
                             Icon(
                                 imageVector = if (isTvMode) Icons.Default.Tv else Icons.Default.Security,
-                                contentDescription = "SSH VPN",
+                                contentDescription = stringResource(R.string.app_name),
                                 tint = CyanPrimary,
                                 modifier = Modifier.size(24.dp)
                             )
@@ -181,7 +184,7 @@ fun MainApp(viewModel: MainViewModel = viewModel()) {
                         if (isTvMode) {
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "TV MODE",
+                                text = stringResource(R.string.tv_mode),
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     fontSize = 9.sp,
                                     fontWeight = FontWeight.Bold,
@@ -204,13 +207,13 @@ fun MainApp(viewModel: MainViewModel = viewModel()) {
                         icon = {
                             Icon(
                                 imageVector = if (isSelected) destination.selectedIcon else destination.unselectedIcon,
-                                contentDescription = destination.title,
+                                contentDescription = stringResource(destination.label),
                                 modifier = Modifier.size(24.dp)
                             )
                         },
                         label = {
                             Text(
-                                text = destination.title,
+                                text = stringResource(destination.label),
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                                 )
@@ -242,13 +245,7 @@ fun MainApp(viewModel: MainViewModel = viewModel()) {
                     CenterAlignedTopAppBar(
                         title = {
                             Text(
-                                text = when (currentDestination) {
-                                    NavDestination.HOME -> "SSH Tunnel"
-                                    NavDestination.APPS -> "Per-App Routing (Split Tunnel)"
-                                    NavDestination.SERVERS -> "SSH Servers & Auth"
-                                    NavDestination.LOGS -> "Terminal & Connection Logs"
-                                    NavDestination.SETTINGS -> "Settings & TV Mode"
-                                },
+                                text = stringResource(currentDestination.title),
                                 style = MaterialTheme.typography.titleLarge.copy(
                                     fontWeight = FontWeight.Bold,
                                     color = TextPrimary
@@ -291,13 +288,7 @@ fun MainApp(viewModel: MainViewModel = viewModel()) {
                 CenterAlignedTopAppBar(
                     title = {
                         Text(
-                            text = when (currentDestination) {
-                                NavDestination.HOME -> "SSH Tunnel"
-                                NavDestination.APPS -> "Per-App Routing"
-                                NavDestination.SERVERS -> "SSH Servers"
-                                NavDestination.LOGS -> "Terminal Logs"
-                                NavDestination.SETTINGS -> "Settings"
-                            },
+                            text = stringResource(currentDestination.title),
                             style = MaterialTheme.typography.titleLarge.copy(
                                 fontWeight = FontWeight.Bold,
                                 color = TextPrimary
@@ -325,13 +316,13 @@ fun MainApp(viewModel: MainViewModel = viewModel()) {
                             icon = {
                                 Icon(
                                     imageVector = if (isSelected) destination.selectedIcon else destination.unselectedIcon,
-                                    contentDescription = destination.title,
+                                    contentDescription = stringResource(destination.label),
                                     modifier = Modifier.size(22.dp)
                                 )
                             },
                             label = {
                                 Text(
-                                    text = destination.title,
+                                    text = stringResource(destination.label),
                                     style = MaterialTheme.typography.labelSmall.copy(
                                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                                     )

@@ -147,19 +147,19 @@ class SshVpnService : VpnService() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_DISCONNECT -> {
-                log("Disconnect requested")
+                log(getString(R.string.log_disconnect_requested))
                 shutdown()
                 return START_NOT_STICKY
             }
             ACTION_CONNECT -> {
-                startForegroundCompat(buildNotification("Starting SSH Tunnel..."))
+                startForegroundCompat(buildNotification(getString(R.string.notif_starting)))
                 startTunnel(intent.getLongExtra(EXTRA_SERVER_ID, -1L))
             }
             else -> {
                 // Always-on VPN (action android.net.VpnService) or a restart after the process was killed
-                startForegroundCompat(buildNotification("Starting SSH Tunnel..."))
+                startForegroundCompat(buildNotification(getString(R.string.notif_starting)))
                 if (tunnelJob?.isActive != true) {
-                    log("VPN started by the system (Always-on VPN or service restart)")
+                    log(getString(R.string.log_started_by_system))
                     startTunnel(-1L)
                 }
             }
@@ -185,8 +185,8 @@ class SshVpnService : VpnService() {
                 (if (serverId > 0) dao.getServerById(serverId) else null) ?: dao.getActiveServerSync()
             }
             if (profile == null) {
-                log("No SSH server profile found. Please add an SSH server first.", isError = true)
-                failAndStop("No SSH server configured")
+                log(getString(R.string.log_no_server), isError = true)
+                failAndStop(getString(R.string.reason_no_server))
                 return@launch
             }
             runTunnel(profile)
@@ -200,8 +200,8 @@ class SshVpnService : VpnService() {
         sessionBytesIn.set(0)
         sessionBytesOut.set(0)
         (getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager).cancel(ERROR_NOTIFICATION_ID)
-        log("Starting VPN tunnel for ${profile.name} (${profile.host}:${profile.port})")
-        updateNotification("Connecting to ${profile.name}...")
+        log(getString(R.string.log_starting, profile.name, profile.host, profile.port))
+        updateNotification(getString(R.string.notif_connecting, profile.name))
 
         try {
             // 1. Local SOCKS5 proxy: survives SSH reconnects
@@ -219,18 +219,22 @@ class SshVpnService : VpnService() {
             try {
                 withContext(Dispatchers.IO) { socks.start() }
             } catch (e: IOException) {
-                log("Cannot open SOCKS5 port ${profile.socksPort}: ${e.message}. Choose another port in the server settings.", isError = true)
-                failAndStop("SOCKS5 port ${profile.socksPort} is busy")
+                log(getString(R.string.log_socks_busy, profile.socksPort, e.message.orEmpty()), isError = true)
+                failAndStop(getString(R.string.reason_socks_busy, profile.socksPort))
                 return
             }
             socksServer = socks
+            log(getString(R.string.log_socks_listening, profile.socksPort))
 
             // 2. TUN interface (replaces a previous one without a gap when switching servers)
             val tun = establishTun(profile) ?: return
             val oldTun = vpnInterface
             vpnInterface = tun
             if (oldTun != null) runCatching { oldTun.close() }
-            packetHandler = VpnTunPacketHandler(tun, profile.socksPort) { msg, isErr -> log(msg, isErr) }.also { it.start() }
+            packetHandler = VpnTunPacketHandler(tun, profile.socksPort) {
+                log(getString(R.string.log_tun_closed), level = LogLevel.WARN)
+            }.also { it.start() }
+            log(getString(R.string.log_tun_started, profile.socksPort))
 
             startStatsLoop(profile)
             startPingLoop(profile)
@@ -254,7 +258,7 @@ class SshVpnService : VpnService() {
 
         while (currentCoroutineContext().isActive) {
             _vpnStatus.value = if (attempt == 0) VpnStatus.CONNECTING else VpnStatus.RECONNECTING
-            val client = SshTunnelClient({ socket -> protect(socket) }) { msg, isErr -> log(msg, isErr) }
+            val client = SshTunnelClient(this, { socket -> protect(socket) }) { msg, isErr -> log(msg, isErr) }
             connectingClient = client
             acquireWakeLock()
             val result = try {
@@ -270,30 +274,30 @@ class SshVpnService : VpnService() {
                 attempt = 0
                 connectStartTime = System.currentTimeMillis()
                 _vpnStatus.value = VpnStatus.CONNECTED
-                log("VPN tunnel is ACTIVE: app traffic -> TUN -> SOCKS5 -> SSH ${profile.host}", level = LogLevel.SUCCESS)
-                updateNotification("Connected to ${profile.name}")
+                log(getString(R.string.log_active, profile.host), level = LogLevel.SUCCESS)
+                updateNotification(getString(R.string.notif_connected, profile.name))
 
                 val reason = waitWhileConnected(client)
                 sshClient = null
                 withContext(Dispatchers.IO) { client.disconnect() }
                 log(reason, level = LogLevel.WARN)
             } else if (SshTunnelClient.isPermanentFailure(result.exceptionOrNull())) {
-                log("Not retrying: check the username, password or key of ${profile.name}.", isError = true)
-                failAndStop("Authentication failed for ${profile.name}")
+                log(getString(R.string.log_not_retrying, profile.name), isError = true)
+                failAndStop(getString(R.string.reason_auth_failed, profile.name))
                 return
             }
 
             if (!VpnPrefs.get(this).getBoolean(VpnPrefs.AUTO_RECONNECT, true)) {
-                log("Auto-reconnect is disabled, stopping VPN.", level = LogLevel.WARN)
-                failAndStop("SSH connection lost")
+                log(getString(R.string.log_autoreconnect_off), level = LogLevel.WARN)
+                failAndStop(getString(R.string.reason_connection_lost))
                 return
             }
 
             attempt++
             val delayMs = (2000L shl (attempt - 1).coerceAtMost(5)).coerceAtMost(60_000L)
             _vpnStatus.value = VpnStatus.RECONNECTING
-            log("Reconnect attempt $attempt in ${delayMs / 1000}s (sooner if the network changes)", level = LogLevel.WARN)
-            updateNotification("Reconnecting to ${profile.name}...", "Attempt $attempt • apps are blocked until the tunnel is back")
+            log(getString(R.string.log_reconnect_in, attempt, (delayMs / 1000).toInt()), level = LogLevel.WARN)
+            updateNotification(getString(R.string.notif_reconnecting, profile.name), getString(R.string.notif_reconnecting_text, attempt))
             // Drop a stale event, then wait for the back-off or a network change
             networkEvents.tryReceive()
             withTimeoutOrNull(delayMs) { networkEvents.receive() }
@@ -304,10 +308,10 @@ class SshVpnService : VpnService() {
     private suspend fun waitWhileConnected(client: SshTunnelClient): String {
         while (true) {
             withTimeoutOrNull(2000) { networkEvents.receive() }
-            if (!client.isConnected) return "SSH session lost."
+            if (!client.isConnected) return getString(R.string.log_session_lost)
             val current = defaultNetwork
             if (current != null && sshNetwork != null && current != sshNetwork) {
-                return "Network changed, re-establishing the SSH session."
+                return getString(R.string.log_network_changed)
             }
             if (current != null && sshNetwork == null) sshNetwork = current
         }
@@ -318,12 +322,13 @@ class SshVpnService : VpnService() {
         val policy = VpnPrefs.routingPolicy(prefs)
         val dnsServer = VpnPrefs.dnsServer(prefs)
         val bypassLan = prefs.getBoolean(VpnPrefs.BYPASS_LAN, true)
+        val lanSuffix = if (bypassLan) getString(R.string.log_lan_bypassed) else ""
         val selectedApps = withContext(Dispatchers.IO) {
             AppDatabase.getInstance(applicationContext).appRuleDao().getSelectedPackageNames()
         }.filter { it != packageName && isInstalled(it) }
 
         val builder = Builder()
-            .setSession("SSH Tunnel (${profile.name})")
+            .setSession(getString(R.string.session_name, profile.name))
             .setMtu(TUN_MTU)
             .addAddress(TUN_ADDRESS, 24)
             .addDnsServer(dnsServer)
@@ -358,32 +363,32 @@ class SshVpnService : VpnService() {
 
         if (policy == RoutingPolicy.ROUTE_ONLY_SELECTED) {
             if (selectedApps.isEmpty()) {
-                log("No apps selected for routing. Select apps in the Apps tab or switch to 'Route ALL Except'.", isError = true)
-                failAndStop("No apps selected for the tunnel")
+                log(getString(R.string.log_no_apps), isError = true)
+                failAndStop(getString(R.string.reason_no_apps))
                 return null
             }
             for (pkg in selectedApps) {
                 runCatching { builder.addAllowedApplication(pkg) }
-                    .onFailure { log("Cannot route $pkg: ${it.message}", level = LogLevel.WARN) }
+                    .onFailure { log(getString(R.string.log_cannot_route, pkg, it.message.orEmpty()), level = LogLevel.WARN) }
             }
-            log("Routing ${selectedApps.size} selected app(s) through the tunnel" + if (bypassLan) " (LAN bypassed)" else "")
+            log(getString(R.string.log_routing_selected, selectedApps.size) + lanSuffix)
         } else {
             runCatching { builder.addDisallowedApplication(packageName) }
             for (pkg in selectedApps) {
                 runCatching { builder.addDisallowedApplication(pkg) }
             }
-            log("Routing all apps through the tunnel except ${selectedApps.size} excluded app(s)" + if (bypassLan) " (LAN bypassed)" else "")
+            log(getString(R.string.log_routing_all, selectedApps.size) + lanSuffix)
         }
 
         val pfd = try {
             builder.establish()
         } catch (e: Exception) {
-            log("Failed to create VPN interface: ${e.message}", isError = true)
+            log(getString(R.string.log_tun_failed, e.message.orEmpty()), isError = true)
             null
         }
         if (pfd == null) {
-            log("Android refused to create the VPN interface (VPN permission revoked?)", isError = true)
-            failAndStop("VPN permission required")
+            log(getString(R.string.log_tun_refused), isError = true)
+            failAndStop(getString(R.string.reason_permission))
         }
         return pfd
     }
@@ -423,7 +428,7 @@ class SshVpnService : VpnService() {
         _vpnStatus.value = VpnStatus.ERROR
         // Keep a visible hint until the user opens the app again
         val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        manager.notify(ERROR_NOTIFICATION_ID, buildNotification("SSH Tunnel stopped", reason, ongoing = false))
+        manager.notify(ERROR_NOTIFICATION_ID, buildNotification(getString(R.string.notif_stopped), reason, ongoing = false))
     }
 
     private fun shutdown() {
@@ -487,10 +492,10 @@ class SshVpnService : VpnService() {
 
                 if (connected) {
                     val stats = _vpnStats.value
-                    val title = if (_vpnStatus.value == VpnStatus.IDLE_SUSPENDED) "Connected (idle): ${profile.name}" else "Connected: ${profile.name}"
+                    val title = if (_vpnStatus.value == VpnStatus.IDLE_SUSPENDED) getString(R.string.notif_connected_idle, profile.name) else getString(R.string.notif_connected_short, profile.name)
                     updateNotification(
                         title,
-                        "↓ ${stats.formatSpeed(speedIn)}  ↑ ${stats.formatSpeed(speedOut)} • Total: ${stats.formatBytes(totalIn + totalOut)}"
+                        getString(R.string.notif_stats, stats.formatSpeed(speedIn), stats.formatSpeed(speedOut), stats.formatBytes(totalIn + totalOut))
                     )
                 }
             }
@@ -504,10 +509,10 @@ class SshVpnService : VpnService() {
         val status = _vpnStatus.value
         if (status == VpnStatus.CONNECTED && smartIdle && idleFor > idleTimeoutSeconds.coerceAtLeast(10) * 1000L) {
             _vpnStatus.value = VpnStatus.IDLE_SUSPENDED
-            log("No traffic for ${idleFor / 1000}s: idle mode (fewer wakeups, latency checks paused)")
+            log(getString(R.string.log_idle, (idleFor / 1000).toInt()))
         } else if (status == VpnStatus.IDLE_SUSPENDED && (!smartIdle || idleFor < 5_000)) {
             _vpnStatus.value = VpnStatus.CONNECTED
-            log("Traffic resumed")
+            log(getString(R.string.log_traffic_resumed))
         }
     }
 
@@ -569,7 +574,7 @@ class SshVpnService : VpnService() {
             cm.registerDefaultNetworkCallback(callback)
             networkCallback = callback
         } catch (e: Exception) {
-            log("Network monitoring unavailable: ${e.message}", level = LogLevel.WARN)
+            log(getString(R.string.log_network_monitor_unavailable, e.message.orEmpty()), level = LogLevel.WARN)
         }
     }
 
@@ -593,7 +598,7 @@ class SshVpnService : VpnService() {
     }
 
     override fun onRevoke() {
-        log("VPN permission revoked by Android (another VPN was started?)", level = LogLevel.WARN)
+        log(getString(R.string.log_revoked), level = LogLevel.WARN)
         shutdown()
         super.onRevoke()
     }
@@ -626,17 +631,17 @@ class SshVpnService : VpnService() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "SSH VPN Tunnel Service",
+                getString(R.string.channel_name),
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "Shows live connection status, speed, and statistics for the SSH VPN Tunnel"
+                description = getString(R.string.channel_desc)
                 setShowBadge(false)
             }
             getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
         }
     }
 
-    private fun buildNotification(title: String, content: String = "Tap to open", ongoing: Boolean = true): Notification {
+    private fun buildNotification(title: String, content: String = getString(R.string.notif_tap), ongoing: Boolean = true): Notification {
         val openPendingIntent = PendingIntent.getActivity(
             this, 0,
             Intent(this, MainActivity::class.java).apply { flags = Intent.FLAG_ACTIVITY_SINGLE_TOP },
@@ -657,14 +662,14 @@ class SshVpnService : VpnService() {
                 Intent(this, SshVpnService::class.java).apply { action = ACTION_DISCONNECT },
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
-            builder.addAction(R.drawable.ic_stat_vpn, "Disconnect", disconnectPendingIntent)
+            builder.addAction(R.drawable.ic_stat_vpn, getString(R.string.notif_action_disconnect), disconnectPendingIntent)
         } else {
             builder.setAutoCancel(true)
         }
         return builder.build()
     }
 
-    private fun updateNotification(title: String, content: String = "Tap to open") {
+    private fun updateNotification(title: String, content: String = getString(R.string.notif_tap)) {
         if (tunnelJob == null) return
         val text = "$title|$content"
         if (text == lastNotificationText) return

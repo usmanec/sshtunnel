@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.VpnService
 import android.os.Build
+import top.rootu.ssh.tunnel.R
 import top.rootu.ssh.tunnel.data.local.AppDatabase
 import top.rootu.ssh.tunnel.data.repository.VpnPrefs
 import top.rootu.ssh.tunnel.vpn.SshVpnService
@@ -22,7 +23,7 @@ class BootReceiver : BroadcastReceiver() {
 
         if (!VpnPrefs.get(context).getBoolean(VpnPrefs.AUTO_START_ON_BOOT, false)) return
         if (VpnService.prepare(context) != null) {
-            SshVpnService.log("Auto-start skipped: grant the VPN permission once from the app first.", isError = true)
+            SshVpnService.log(context.getString(R.string.log_boot_no_permission), isError = true)
             return
         }
 
@@ -31,7 +32,7 @@ class BootReceiver : BroadcastReceiver() {
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val activeServer = AppDatabase.getInstance(context).serverDao().getActiveServerSync() ?: return@launch
-                SshVpnService.log("Device boot completed: auto-starting VPN tunnel for ${activeServer.name}...")
+                SshVpnService.log(context.getString(R.string.log_boot_start, activeServer.name))
                 val serviceIntent = Intent(context, SshVpnService::class.java).apply {
                     this.action = SshVpnService.ACTION_CONNECT
                     putExtra(SshVpnService.EXTRA_SERVER_ID, activeServer.id)
@@ -42,7 +43,7 @@ class BootReceiver : BroadcastReceiver() {
                     context.startService(serviceIntent)
                 }
             } catch (e: Exception) {
-                SshVpnService.log("Auto-start failed: ${e.message}", isError = true)
+                SshVpnService.log(context.getString(R.string.log_boot_failed, e.message.orEmpty()), isError = true)
             } finally {
                 pending.finish()
             }

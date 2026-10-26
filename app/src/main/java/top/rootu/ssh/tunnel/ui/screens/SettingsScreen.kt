@@ -52,6 +52,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
+import top.rootu.ssh.tunnel.R
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -103,6 +105,7 @@ fun SettingsScreen(
         mutableStateOf(OemBatteryOptimizationHelper.isBatteryOptimizationIgnored(context))
     }
     val detectedBrand = remember { OemBatteryOptimizationHelper.getDetectedBrand() }
+    val brandName = remember(detectedBrand) { OemBatteryOptimizationHelper.brandName(context, detectedBrand) }
 
     // Re-check the battery exemption every time the user comes back from system settings
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -124,19 +127,19 @@ fun SettingsScreen(
         // ==========================================
         // 1. RELIABILITY & AUTOMATION
         // ==========================================
-        SectionTitle("RELIABILITY & AUTOMATION")
+        SectionTitle(stringResource(R.string.section_reliability))
         SettingsCard {
             SettingSwitchRow(
-                title = "Auto-Reconnect",
-                description = "Restore the tunnel automatically after network changes or SSH drops. Routed apps stay blocked while reconnecting, so nothing leaks.",
+                title = stringResource(R.string.auto_reconnect_title),
+                description = stringResource(R.string.auto_reconnect_desc),
                 checked = autoReconnect,
                 onCheckedChange = { viewModel.setAutoReconnect(it) },
                 icon = Icons.Default.Loop,
                 modifier = Modifier.testTag("auto_reconnect_switch")
             )
             SettingSwitchRow(
-                title = "Auto-Start on Boot",
-                description = "Connect automatically when the device or Android TV boots up",
+                title = stringResource(R.string.boot_title),
+                description = stringResource(R.string.boot_desc),
                 checked = autoStartOnBoot,
                 onCheckedChange = { viewModel.setAutoStartOnBoot(it) },
                 icon = Icons.Default.PowerSettingsNew,
@@ -148,11 +151,11 @@ fun SettingsScreen(
         // ==========================================
         // 2. NETWORK & DNS
         // ==========================================
-        SectionTitle("NETWORK & DNS")
+        SectionTitle(stringResource(R.string.section_network))
         SettingsCard {
             SettingSwitchRow(
-                title = "Bypass Local Network (LAN)",
-                description = "Routed apps reach devices in your home network (NAS, DLNA, Chromecast, router) directly. Internet traffic still goes through SSH.",
+                title = stringResource(R.string.bypass_lan_title),
+                description = stringResource(R.string.bypass_lan_desc),
                 checked = bypassLan,
                 onCheckedChange = { viewModel.setBypassLan(it) },
                 icon = Icons.Default.Home,
@@ -164,12 +167,12 @@ fun SettingsScreen(
                 Icon(Icons.Default.Dns, contentDescription = null, tint = CyanPrimary, modifier = Modifier.size(20.dp))
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Tunnel DNS Server: $dnsServer",
+                    text = stringResource(R.string.dns_title, dnsServer),
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold, color = TextPrimary)
                 )
             }
             Text(
-                text = "DNS queries of routed apps are resolved by this server through the SSH tunnel (DNS over TCP). Use a public resolver: local addresses are not reachable from the SSH server.",
+                text = stringResource(R.string.dns_desc),
                 style = MaterialTheme.typography.bodyMedium.copy(color = TextSecondary),
                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
             )
@@ -199,11 +202,11 @@ fun SettingsScreen(
         // ==========================================
         // 3. BATTERY SAVING & RESOURCE CONTROL
         // ==========================================
-        SectionTitle("BATTERY SAVING & RESOURCE CONTROL")
+        SectionTitle(stringResource(R.string.section_battery))
         SettingsCard {
             SettingSwitchRow(
-                title = "Smart Idle Mode",
-                description = "When routed apps are idle, refresh statistics less often and pause latency checks",
+                title = stringResource(R.string.idle_mode_title),
+                description = stringResource(R.string.idle_mode_desc),
                 checked = smartBatterySaver,
                 onCheckedChange = { viewModel.setSmartBatterySaver(it) },
                 icon = Icons.Default.BatteryChargingFull,
@@ -212,7 +215,7 @@ fun SettingsScreen(
             )
             if (smartBatterySaver) {
                 Text(
-                    text = "Idle after:",
+                    text = stringResource(R.string.idle_after),
                     style = MaterialTheme.typography.labelMedium.copy(color = TextSecondary),
                     modifier = Modifier.padding(start = 8.dp, top = 4.dp, bottom = 6.dp)
                 )
@@ -224,7 +227,7 @@ fun SettingsScreen(
                         FilterChip(
                             selected = idleTimeoutSeconds == seconds,
                             onClick = { viewModel.setIdleTimeoutSeconds(seconds) },
-                            label = { Text(if (seconds < 60) "${seconds}s" else "${seconds / 60} min") },
+                            label = { Text(if (seconds < 60) stringResource(R.string.seconds_short, seconds) else stringResource(R.string.minutes_short, seconds / 60)) },
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = CyanPrimary.copy(alpha = 0.2f),
                                 selectedLabelColor = CyanPrimary
@@ -237,16 +240,16 @@ fun SettingsScreen(
             }
             if (!isTv) {
                 SettingSwitchRow(
-                    title = "Screen-Off Throttling",
-                    description = "Refresh statistics every 15s and pause latency checks while the screen is off",
+                    title = stringResource(R.string.screen_off_title),
+                    description = stringResource(R.string.screen_off_desc),
                     checked = screenOffThrottling,
                     onCheckedChange = { viewModel.setScreenOffThrottling(it) },
                     modifier = Modifier.testTag("screen_off_throttling_switch")
                 )
             }
             SettingSwitchRow(
-                title = "Aggressive Radio Saver (60s+ keepalive)",
-                description = "Sends SSH keepalives at most once per minute so Wi-Fi/mobile radios wake up less often. Dead connections are detected more slowly.",
+                title = stringResource(R.string.radio_saver_title),
+                description = stringResource(R.string.radio_saver_desc),
                 checked = aggressiveBatterySaver,
                 onCheckedChange = { viewModel.setAggressiveBatterySaver(it) },
                 modifier = Modifier.testTag("aggressive_battery_saver_switch")
@@ -257,7 +260,7 @@ fun SettingsScreen(
         // 4. OEM / XIAOMI ANTI-KILL PROTECTION (phones and tablets)
         // ==========================================
         if (!isTv || !isBatteryOptimizedIgnored) {
-            SectionTitle("BACKGROUND PROTECTION")
+            SectionTitle(stringResource(R.string.section_background))
             Card(
                 colors = CardDefaults.cardColors(containerColor = DarkSurface),
                 shape = RoundedCornerShape(14.dp),
@@ -278,14 +281,14 @@ fun SettingsScreen(
                         Spacer(modifier = Modifier.width(10.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Device Protection: ${detectedBrand.displayName}",
+                                text = stringResource(R.string.device_protection, brandName),
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold, color = TextPrimary)
                             )
                             Text(
                                 text = if (isBatteryOptimizedIgnored) {
-                                    "Battery optimizations disabled (service protected from sleep)"
+                                    stringResource(R.string.battery_opt_off)
                                 } else {
-                                    "Battery optimizations active (the system may stop the VPN in background)"
+                                    stringResource(R.string.battery_opt_on)
                                 },
                                 style = MaterialTheme.typography.bodyMedium.copy(
                                     color = if (isBatteryOptimizedIgnored) EmeraldSuccess else AmberWarning
@@ -311,7 +314,7 @@ fun SettingsScreen(
                                 .testTag("request_battery_exemption_button")
                         ) {
                             Text(
-                                text = if (isBatteryOptimizedIgnored) "Re-check Exemption" else "Disable Optimization",
+                                text = stringResource(if (isBatteryOptimizedIgnored) R.string.btn_recheck else R.string.btn_disable_opt),
                                 color = if (isBatteryOptimizedIgnored) TextPrimary else Color.Black,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.SemiBold
@@ -326,7 +329,7 @@ fun SettingsScreen(
                                     .tvFocusVisual(shape = RoundedCornerShape(10.dp))
                                     .testTag("open_autostart_settings_button")
                             ) {
-                                Text(text = "Autostart Settings", color = CyanPrimary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                                Text(text = stringResource(R.string.btn_autostart_settings), color = CyanPrimary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                             }
                         }
                     }
@@ -338,7 +341,7 @@ fun SettingsScreen(
                                 .align(Alignment.CenterHorizontally)
                                 .tvFocusVisual(shape = RoundedCornerShape(8.dp))
                         ) {
-                            Text(text = "View Step-by-Step ${detectedBrand.displayName} Guide", color = CyanPrimary, fontSize = 13.sp)
+                            Text(text = stringResource(R.string.btn_oem_guide, brandName), color = CyanPrimary, fontSize = 13.sp)
                         }
                     }
                 }
@@ -351,9 +354,8 @@ fun SettingsScreen(
         val socksPort = activeServer?.socksPort ?: 10808
         InfoCard(
             icon = Icons.Default.Info,
-            title = "SSH Dynamic Forwarding (-D)",
-            text = "Equivalent to: ssh -D $socksPort ${activeServer?.let { "${it.username}@${it.host}" } ?: "user@server"}\n\n" +
-                "Besides the VPN, apps with SOCKS5 support on this device can use 127.0.0.1:$socksPort while the tunnel is connected.",
+            title = stringResource(R.string.socks_info_title),
+            text = stringResource(R.string.socks_info_text, socksPort, activeServer?.let { "${it.username}@${it.host}" } ?: "user@server"),
             monospace = true
         )
 
@@ -362,11 +364,8 @@ fun SettingsScreen(
         // ==========================================
         InfoCard(
             icon = Icons.Default.Tv,
-            title = "Android TV Remote & Always-on VPN",
-            text = "• Use the arrow keys to move, OK to select or toggle, Back to return to Home.\n" +
-                "• On Home, OK on the big button connects or disconnects.\n" +
-                "• Auto-Start on Boot connects your TV box automatically after power on.\n" +
-                "• Always-on VPN: Android Settings → Network & Internet → VPN → SSH Tunnel → Always-on."
+            title = stringResource(R.string.tv_info_title),
+            text = stringResource(R.string.tv_info_text)
         )
 
         Spacer(modifier = Modifier.height(20.dp))
@@ -374,14 +373,14 @@ fun SettingsScreen(
 
     // OEM Instructions Dialog
     if (showOemGuideDialog) {
-        val instructions = remember(detectedBrand) { OemBatteryOptimizationHelper.getOemInstructions(detectedBrand) }
+        val instructions = remember(detectedBrand) { OemBatteryOptimizationHelper.getOemInstructions(context, detectedBrand) }
         AlertDialog(
             onDismissRequest = { showOemGuideDialog = false },
-            title = { Text(text = "${detectedBrand.displayName} Background Setup", fontWeight = FontWeight.Bold, color = TextPrimary) },
+            title = { Text(text = stringResource(R.string.oem_dialog_title, brandName), fontWeight = FontWeight.Bold, color = TextPrimary) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
-                        text = "To keep the VPN running in the background on ${detectedBrand.displayName}:",
+                        text = stringResource(R.string.oem_dialog_text, brandName),
                         style = MaterialTheme.typography.bodyMedium.copy(color = TextSecondary)
                     )
                     instructions.forEach { step ->
@@ -401,7 +400,7 @@ fun SettingsScreen(
                     colors = ButtonDefaults.buttonColors(containerColor = CyanPrimary),
                     modifier = Modifier.tvFocusVisual(shape = RoundedCornerShape(8.dp))
                 ) {
-                    Text("Open Settings", color = Color.Black)
+                    Text(stringResource(R.string.btn_open_settings), color = Color.Black)
                 }
             },
             dismissButton = {
@@ -409,7 +408,7 @@ fun SettingsScreen(
                     onClick = { showOemGuideDialog = false },
                     modifier = Modifier.tvFocusVisual(shape = RoundedCornerShape(8.dp))
                 ) {
-                    Text("Close", color = TextSecondary)
+                    Text(stringResource(R.string.btn_close), color = TextSecondary)
                 }
             },
             containerColor = DarkSurface
@@ -443,10 +442,11 @@ private fun CustomDnsInput(currentDns: String, onApply: (String, (Boolean) -> Un
     val focusManager = LocalFocusManager.current
     var input by remember(currentDns) { mutableStateOf(if (currentDns in VpnPrefs.DNS_PRESETS) "" else currentDns) }
     var error by remember { mutableStateOf<String?>(null) }
+    val errorMessage = stringResource(R.string.error_dns)
     val apply = {
         if (input.isNotBlank()) {
             onApply(input.trim()) { ok ->
-                error = if (ok) null else "Enter a public IPv4 address, e.g. 1.1.1.1"
+                error = if (ok) null else errorMessage
                 if (ok) focusManager.clearFocus()
             }
         }
@@ -465,8 +465,8 @@ private fun CustomDnsInput(currentDns: String, onApply: (String, (Boolean) -> Un
                 input = it.filter { ch -> ch.isDigit() || ch == '.' }.take(15)
                 error = null
             },
-            label = "Custom DNS (IPv4)",
-            placeholder = "e.g. 94.140.14.14",
+            label = stringResource(R.string.field_custom_dns),
+            placeholder = stringResource(R.string.hint_custom_dns),
             singleLine = true,
             isError = errorText != null,
             supportingText = errorText,
@@ -486,7 +486,7 @@ private fun CustomDnsInput(currentDns: String, onApply: (String, (Boolean) -> Un
                 .tvFocusVisual(shape = RoundedCornerShape(10.dp))
                 .testTag("dns_apply_button")
         ) {
-            Text("Apply")
+            Text(stringResource(R.string.btn_apply))
         }
     }
 }

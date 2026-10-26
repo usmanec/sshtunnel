@@ -10,7 +10,8 @@
 | `vpn/net/ByteQueueTest` | буфер неподтверждённых данных |
 | `vpn/net/TcpProxySessionTest` | рукопожатие, полузакрытие, окно клиента, повтор, дубли, RST, нулевое окно |
 | `vpn/SocksTunnelEndToEndTest` | TCP приложения → TcpProxySession → SOCKS5 → транспорт; отказ при упавшем транспорте |
-| `ExampleRobolectricTest` | дефолты настроек, форматирование статистики (Robolectric) |
+| `ExampleRobolectricTest` | дефолты настроек, форматирование статистики, английский по умолчанию и русский перевод (Robolectric, `@Config(qualifiers = "ru")`) |
+| `data/model/AuthTypeTest` | порядок методов входа (ключ раньше пароля), стабильность имён в Room |
 
 `FakeApp` в `vpn/net` изображает TCP-стек приложения по ту сторону TUN — используйте его для новых
 тестов сетевого ядра.
@@ -37,8 +38,9 @@ cd tools/sandbox-check/compile && gradle --no-daemon compileKotlin compileJava
 - `compile` — компилирует **все** исходники `app/src/main` против Robolectric `android-all`
   (классы Android) и JetBrains Compose Desktop 1.7 (тот же API, что androidx Compose 1.7 /
   Material3 1.3 из BOM 2024.09.00). Android-only API (ComponentActivity, LocalContext, Room,
-  NotificationCompat, lifecycle и т. п.) закрыты стабами в `compile/stubskt` и `compile/stubs-java`
-  (`R`). Ловит только ошибки компиляции; поведение стабов не проверяется. Новые Android-only
+  NotificationCompat, lifecycle, `stringResource` и т. п.) закрыты стабами в `compile/stubskt`.
+  Класс `R` генерируется задачей `generateR` из `app/src/main/res` (строки, массивы, drawable, mipmap,
+  шрифты), поэтому ссылка на несуществующий ресурс тоже ловится. Ловит только ошибки компиляции; поведение стабов не проверяется. Новые Android-only
   вызовы → добавить стаб с той же сигнатурой.
 
 Ни один из вариантов не проверяет KSP/Room, ресурсы, манифест и R8 — это только реальная сборка.

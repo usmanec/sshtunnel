@@ -1,3 +1,292 @@
 <resources>
-    <string name="app_name">SSH Tunnel</string>
+    <string name="app_name" translatable="false">SSH Tunnel</string>
+
+    <!-- Navigation -->
+    <string name="nav_home">Home</string>
+    <string name="nav_apps">Apps</string>
+    <string name="nav_servers">Servers</string>
+    <string name="nav_logs">Logs</string>
+    <string name="nav_settings">Settings</string>
+    <string name="title_apps">Per-App Routing</string>
+    <string name="title_servers">SSH Servers</string>
+    <string name="title_logs">Connection Logs</string>
+    <string name="title_settings">Settings</string>
+    <string name="tv_mode">TV MODE</string>
+
+    <!-- Common -->
+    <string name="btn_cancel">Cancel</string>
+    <string name="btn_close">Close</string>
+    <string name="btn_delete">Delete</string>
+    <string name="btn_edit">Edit</string>
+    <string name="btn_apply">Apply</string>
+    <string name="btn_reconnect">Reconnect</string>
+    <string name="reconnect_banner">Routing settings changed. Reconnect to apply them.</string>
+    <string name="press_ok_to_edit">Press OK to edit</string>
+    <string name="unit_ms">%1$d ms</string>
+
+    <!-- Home -->
+    <string name="toast_permission_denied">Tunnel permission was not granted</string>
+    <string name="tv_no_permission_dialog">This TV has no permission dialog for tunnels. Grant it once via ADB: adb shell appops set %1$s ACTIVATE_VPN allow</string>
+    <string name="cd_connect">Connect</string>
+    <string name="cd_disconnect">Disconnect</string>
+    <string name="power_connected">CONNECTED</string>
+    <string name="power_connecting">CONNECTING</string>
+    <string name="power_retrying">RETRYING</string>
+    <string name="power_reconnect">RECONNECT</string>
+    <string name="power_add_server">ADD SERVER</string>
+    <string name="power_connect">CONNECT</string>
+    <string name="idle_title">Idle Mode</string>
+    <string name="idle_text">No traffic from routed apps right now: statistics refresh less often and latency checks are paused. The tunnel stays connected.</string>
+    <string name="status_active">ACTIVE • %1$s</string>
+    <string name="status_active_idle">ACTIVE (IDLE) • %1$s</string>
+    <string name="status_connecting">CONNECTING TO SSH…</string>
+    <string name="status_reconnecting">RECONNECTING (APPS BLOCKED)…</string>
+    <string name="status_error">CONNECTION FAILED</string>
+    <string name="status_disconnected">DISCONNECTED</string>
+    <string name="cd_server">Server</string>
+    <string name="no_server">No Server Configured</string>
+    <string name="no_server_hint">Add an SSH server to connect</string>
+    <string name="ping_value">Ping: %1$d ms</string>
+    <string name="btn_add">Add</string>
+    <string name="btn_switch">Switch</string>
+    <string name="telemetry_download">DOWNLOAD</string>
+    <string name="telemetry_upload">UPLOAD</string>
+    <string name="telemetry_total">Total: %1$s</string>
+    <string name="telemetry_latency">LATENCY (PING)</string>
+    <string name="latency_none">-- ms</string>
+    <string name="latency_live">Real-time SSH</string>
+    <string name="latency_standby">Standby</string>
+    <string name="telemetry_total_traffic">TOTAL TRAFFIC</string>
+    <string name="active_sockets">%1$d active sockets</string>
+    <string name="split_title">Per-App Routing</string>
+    <string name="split_only_selected">Only selected apps go through SSH (all others direct)</string>
+    <string name="split_all_except">All traffic goes through SSH (except selected apps)</string>
+    <string name="apps_configured">Apps selected: %1$d</string>
+    <string name="no_apps_hint">No apps selected. Choose the apps to route through SSH.</string>
+    <string name="btn_select_apps">Select Apps</string>
+
+    <!-- Servers -->
+    <string name="servers_header">SSH SERVERS (%1$d)</string>
+    <string name="servers_hint">OK on a server makes it active (switches the running tunnel)</string>
+    <string name="btn_add_server">Add Server</string>
+    <string name="servers_empty">No SSH servers added yet</string>
+    <string name="servers_empty_hint">Press \"Add Server\" to add and verify your server</string>
+    <string name="delete_title">Delete SSH Server?</string>
+    <string name="delete_text">Delete profile \"%1$s\" (%2$s)? This cannot be undone.</string>
+    <string name="cd_active_server">Active server</string>
+    <string name="cd_make_active">Make active</string>
+    <string name="badge_active">ACTIVE</string>
+    <string name="key_configured">Configured key</string>
+    <string name="toast_key_imported">SSH key imported: %1$s</string>
+    <string name="toast_key_read_failed">Failed to read the SSH key file</string>
+    <string name="toast_no_file_picker">No file picker on this device. Paste the key text instead.</string>
+    <string name="editor_title_add">Add &amp; Verify SSH Server</string>
+    <string name="editor_title_edit">Edit SSH Server</string>
+    <string name="editor_notice">The connection is tested before saving to make sure host, port and credentials are correct.</string>
+    <string name="field_profile_name">Profile Name</string>
+    <string name="hint_profile_name">e.g. Office gateway, Test stand</string>
+    <string name="field_host">Host / IP Address</string>
+    <string name="field_port">Port</string>
+    <string name="field_username">SSH Username</string>
+    <string name="auth_label">Authentication</string>
+    <string name="auth_password">Password</string>
+    <string name="auth_key">Private key</string>
+    <string name="auth_key_password">Key + password</string>
+    <string name="key_file_title">Private Key File</string>
+    <string name="key_loaded">Key loaded (%1$d chars)</string>
+    <string name="key_none">No key file selected</string>
+    <string name="btn_pick_file">Pick File</string>
+    <string name="btn_hide_key">Hide raw key</string>
+    <string name="btn_show_key">View / edit raw key</string>
+    <string name="btn_remove">Remove</string>
+    <string name="field_key_text">Private key text (or paste directly)</string>
+    <string name="field_passphrase">Key passphrase (only for an encrypted key)</string>
+    <string name="hint_passphrase">Leave blank if the key is not encrypted</string>
+    <string name="field_password">Password</string>
+    <string name="field_password_after_key">Password (sent after the key)</string>
+    <string name="cd_toggle_password">Show or hide password</string>
+    <string name="field_socks_port">SOCKS5 Port (-D)</string>
+    <string name="field_keepalive">KeepAlive (sec)</string>
+    <string name="compression_title">Enable Compression (zlib)</string>
+    <string name="compression_desc">Helps on slow links with text traffic; useless for video and already compressed data</string>
+    <string name="verified_title">Connection Verified</string>
+    <string name="verify_required">Verification Required</string>
+    <string name="ready_to_save">Ready to save</string>
+    <string name="test_before_save">Test the SSH connection before saving</string>
+    <string name="btn_testing">Testing…</string>
+    <string name="btn_retest">Re-test</string>
+    <string name="btn_test">Test Connection</string>
+    <string name="toast_server_saved">Server verified and saved</string>
+    <string name="toast_cannot_save">Cannot save server: %1$s</string>
+    <string name="btn_verifying">Verifying…</string>
+    <string name="btn_save_server">Save Server</string>
+    <string name="btn_test_and_save">Test &amp; Save Server</string>
+    <string name="btn_save_anyway">Save anyway</string>
+    <string name="new_server_name">New SSH Server</string>
+    <string name="test_in_progress">Testing SSH connection and login to %1$s:%2$d…</string>
+    <string name="test_ok">Connection and login verified. Latency: %1$d ms</string>
+    <string name="test_failed_generic">Connection test failed</string>
+    <string name="test_error">Error: %1$s</string>
+
+    <!-- Apps -->
+    <string name="routing_policy">ROUTING POLICY</string>
+    <string name="policy_only_selected">Route ONLY Selected</string>
+    <string name="policy_all_except">Route ALL Except</string>
+    <string name="policy_only_selected_desc">All device traffic goes direct. Only checked apps go through the SSH tunnel.</string>
+    <string name="policy_all_except_desc">All device traffic goes through the SSH tunnel, except checked apps.</string>
+    <string name="search_apps_hint">Search by name or package (e.g. Chrome, telegram)…</string>
+    <string name="cd_search">Search</string>
+    <string name="cd_clear_search">Clear search</string>
+    <string name="filter_user">User Apps</string>
+    <string name="filter_selected">Selected (%1$d)</string>
+    <string name="filter_all">All</string>
+    <string name="filter_system">System</string>
+    <string name="apps_shown">%1$d apps shown (%2$d selected)</string>
+    <string name="btn_select_shown">Select Shown</string>
+    <string name="btn_clear_shown">Clear Shown</string>
+    <string name="apps_empty">No applications match your filter</string>
+    <string name="badge_sys">SYS</string>
+    <string name="cd_selected">Selected</string>
+    <string name="cd_not_selected">Not selected</string>
+
+    <!-- Logs -->
+    <string name="logs_header">CONNECTION LOGS</string>
+    <string name="logs_count">%1$d events logged</string>
+    <string name="toast_logs_copied">Logs copied to clipboard</string>
+    <string name="cd_copy_logs">Copy logs</string>
+    <string name="cd_clear_logs">Clear logs</string>
+    <string name="logs_empty">No log entries yet</string>
+    <string name="logs_empty_hint">Connection events will appear here in real time</string>
+
+    <!-- Settings -->
+    <string name="section_reliability">RELIABILITY &amp; AUTOMATION</string>
+    <string name="auto_reconnect_title">Auto-Reconnect</string>
+    <string name="auto_reconnect_desc">Restore the tunnel automatically after network changes or SSH drops. Routed apps stay blocked while reconnecting, so nothing leaks.</string>
+    <string name="boot_title">Auto-Start on Boot</string>
+    <string name="boot_desc">Connect automatically when the device or Android TV boots up</string>
+    <string name="section_network">NETWORK &amp; DNS</string>
+    <string name="bypass_lan_title">Bypass Local Network (LAN)</string>
+    <string name="bypass_lan_desc">Routed apps reach devices in your local network (NAS, DLNA, Chromecast, router) directly. Internet traffic still goes through SSH.</string>
+    <string name="dns_title">Tunnel DNS Server: %1$s</string>
+    <string name="dns_desc">DNS queries of routed apps are resolved by this server through the SSH tunnel (DNS over TCP). Use a public resolver: local addresses are not reachable from the SSH server.</string>
+    <string name="field_custom_dns">Custom DNS (IPv4)</string>
+    <string name="hint_custom_dns">e.g. 94.140.14.14</string>
+    <string name="error_dns">Enter a public IPv4 address, e.g. 1.1.1.1</string>
+    <string name="section_battery">BATTERY SAVING &amp; RESOURCE CONTROL</string>
+    <string name="idle_mode_title">Smart Idle Mode</string>
+    <string name="idle_mode_desc">When routed apps are idle, refresh statistics less often and pause latency checks</string>
+    <string name="idle_after">Idle after:</string>
+    <string name="seconds_short">%1$d s</string>
+    <string name="minutes_short">%1$d min</string>
+    <string name="screen_off_title">Screen-Off Throttling</string>
+    <string name="screen_off_desc">Refresh statistics every 15 s and pause latency checks while the screen is off</string>
+    <string name="radio_saver_title">Aggressive Radio Saver (60 s+ keepalive)</string>
+    <string name="radio_saver_desc">Sends SSH keepalives at most once per minute so Wi-Fi/mobile radios wake up less often. Dead connections are detected more slowly.</string>
+    <string name="section_background">BACKGROUND PROTECTION</string>
+    <string name="device_protection">Device Protection: %1$s</string>
+    <string name="battery_opt_off">Battery optimizations disabled (service protected from sleep)</string>
+    <string name="battery_opt_on">Battery optimizations active (the system may stop the tunnel in background)</string>
+    <string name="btn_recheck">Re-check Exemption</string>
+    <string name="btn_disable_opt">Disable Optimization</string>
+    <string name="btn_autostart_settings">Autostart Settings</string>
+    <string name="btn_oem_guide">View Step-by-Step %1$s Guide</string>
+    <string name="socks_info_title">SSH Dynamic Forwarding (-D)</string>
+    <string name="socks_info_text">Equivalent to: ssh -D %1$d %2$s\n\nApps with SOCKS5 support on this device can also use 127.0.0.1:%1$d while the tunnel is connected.</string>
+    <string name="tv_info_title">Android TV Remote &amp; Always-on</string>
+    <string name="tv_info_text">• Use the arrow keys to move, OK to select or toggle, Back to return to Home.\n• On Home, OK on the big button connects or disconnects.\n• Auto-Start on Boot connects your TV box right after power on.\n• Always-on: Android Settings → Network &amp; Internet → VPN → SSH Tunnel → Always-on VPN.</string>
+    <string name="oem_dialog_title">%1$s Background Setup</string>
+    <string name="oem_dialog_text">To keep the tunnel running in the background on %1$s:</string>
+    <string name="btn_open_settings">Open Settings</string>
+    <string name="oem_generic">Standard Android</string>
+    <string-array name="oem_steps_xiaomi">
+        <item>1. Autostart: enable the switch for this app.</item>
+        <item>2. Battery saver: choose \"No restrictions\", otherwise MIUI closes the SSH tunnel after the screen locks.</item>
+        <item>3. Recents: long-press the app card and tap the lock icon so the system does not clear the process.</item>
+    </string-array>
+    <string-array name="oem_steps_huawei">
+        <item>1. App launch: switch management from \"Automatic\" to \"Manual\".</item>
+        <item>2. Allow all three: Auto-launch, Secondary launch and Run in background.</item>
+        <item>3. Lock the app in the recent tasks list.</item>
+    </string-array>
+    <string-array name="oem_steps_samsung">
+        <item>1. Battery → Background usage limits: add the app to \"Never sleeping apps\".</item>
+        <item>2. Turn off \"Put unused apps to sleep\".</item>
+        <item>3. Turn off battery optimization for the app.</item>
+    </string-array>
+    <string-array name="oem_steps_oppo">
+        <item>1. Auto-launch management: allow auto-launch for the app.</item>
+        <item>2. Background battery usage: allow unrestricted background activity.</item>
+        <item>3. Lock the app in the recents list.</item>
+    </string-array>
+    <string-array name="oem_steps_vivo">
+        <item>1. Background power management: choose \"Allow high background power consumption\".</item>
+        <item>2. Autostart: allow the app to start automatically.</item>
+        <item>3. Lock the app in recents.</item>
+    </string-array>
+    <string-array name="oem_steps_generic">
+        <item>1. Battery → Battery optimization: choose \"Don\'t optimize\" / \"Unrestricted\".</item>
+        <item>2. Background data: allow unrestricted data usage.</item>
+        <item>3. Always-on: in Android settings enable \"Always-on VPN\" for this app.</item>
+    </string-array>
+
+    <!-- Tunnel service: notifications and log -->
+    <string name="channel_name">Tunnel status</string>
+    <string name="channel_desc">Connection status, speed and traffic of the SSH tunnel</string>
+    <string name="notif_tap">Tap to open</string>
+    <string name="notif_action_disconnect">Disconnect</string>
+    <string name="notif_starting">Starting SSH Tunnel…</string>
+    <string name="notif_connecting">Connecting to %1$s…</string>
+    <string name="notif_connected">Connected to %1$s</string>
+    <string name="notif_connected_short">Connected: %1$s</string>
+    <string name="notif_connected_idle">Connected (idle): %1$s</string>
+    <string name="notif_stats">↓ %1$s  ↑ %2$s • Total: %3$s</string>
+    <string name="notif_reconnecting">Reconnecting to %1$s…</string>
+    <string name="notif_reconnecting_text">Attempt %1$d • apps are blocked until the tunnel is back</string>
+    <string name="notif_stopped">SSH Tunnel stopped</string>
+    <string name="session_name">SSH Tunnel (%1$s)</string>
+    <string name="log_disconnect_requested">Disconnect requested</string>
+    <string name="log_started_by_system">Tunnel started by the system (Always-on or service restart)</string>
+    <string name="log_no_server">No SSH server profile found. Add an SSH server first.</string>
+    <string name="reason_no_server">No SSH server configured</string>
+    <string name="log_starting">Starting tunnel for %1$s (%2$s:%3$d)</string>
+    <string name="log_socks_busy">Cannot open SOCKS5 port %1$d: %2$s. Choose another port in the server settings.</string>
+    <string name="reason_socks_busy">SOCKS5 port %1$d is busy</string>
+    <string name="log_socks_listening">Local SOCKS5 proxy listening on 127.0.0.1:%1$d</string>
+    <string name="log_tun_started">Packet router started: TCP and DNS → SOCKS5 127.0.0.1:%1$d → SSH</string>
+    <string name="log_tun_closed">Tunnel interface closed, packet router stopped</string>
+    <string name="log_active">Tunnel is ACTIVE: app traffic → TUN → SOCKS5 → SSH %1$s</string>
+    <string name="log_not_retrying">Not retrying: check the username, password or key of %1$s.</string>
+    <string name="reason_auth_failed">Authentication failed for %1$s</string>
+    <string name="log_autoreconnect_off">Auto-reconnect is disabled, stopping the tunnel.</string>
+    <string name="reason_connection_lost">SSH connection lost</string>
+    <string name="log_reconnect_in">Reconnect attempt %1$d in %2$d s (sooner if the network changes)</string>
+    <string name="log_session_lost">SSH session lost.</string>
+    <string name="log_network_changed">Network changed, re-establishing the SSH session.</string>
+    <string name="log_no_apps">No apps selected for the tunnel. Select apps in the Apps tab or switch to \"Route ALL Except\".</string>
+    <string name="reason_no_apps">No apps selected for the tunnel</string>
+    <string name="log_cannot_route">Cannot route %1$s: %2$s</string>
+    <string name="log_routing_selected">Routing %1$d selected app(s) through the tunnel</string>
+    <string name="log_routing_all">Routing all apps through the tunnel except %1$d excluded app(s)</string>
+    <string name="log_lan_bypassed">" (LAN bypassed)"</string>
+    <string name="log_tun_failed">Failed to create the tunnel interface: %1$s</string>
+    <string name="log_tun_refused">Android refused to create the tunnel interface (permission revoked?)</string>
+    <string name="reason_permission">Tunnel permission required</string>
+    <string name="log_idle">No traffic for %1$d s: idle mode (fewer wakeups, latency checks paused)</string>
+    <string name="log_traffic_resumed">Traffic resumed</string>
+    <string name="log_network_monitor_unavailable">Network monitoring unavailable: %1$s</string>
+    <string name="log_revoked">Tunnel permission revoked by Android (another tunnel app was started?)</string>
+    <string name="log_boot_no_permission">Auto-start skipped: grant the tunnel permission once from the app first.</string>
+    <string name="log_boot_start">Device boot completed: auto-starting the tunnel for %1$s…</string>
+    <string name="log_boot_failed">Auto-start failed: %1$s</string>
+
+    <!-- SSH -->
+    <string name="log_ssh_connecting">Connecting to %1$s…</string>
+    <string name="log_ssh_established">SSH session established (%1$s)</string>
+    <string name="log_ssh_failed">SSH connection failed: %1$s</string>
+    <string name="log_ssh_disconnecting">Disconnecting SSH session…</string>
+    <string name="err_auth">Authentication failed: invalid username, password, or SSH key</string>
+    <string name="err_key">Invalid SSH private key format or wrong passphrase</string>
+    <string name="err_timeout">Connection to %1$s:%2$d timed out</string>
+    <string name="err_refused">Connection refused on port %1$d</string>
+    <string name="err_unknown_host">Unknown host: %1$s</string>
 </resources>

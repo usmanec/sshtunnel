@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import top.rootu.ssh.tunnel.R
 import top.rootu.ssh.tunnel.data.model.AppRoutingRule
 import top.rootu.ssh.tunnel.data.model.ConnectionLogEntry
 import top.rootu.ssh.tunnel.data.model.RoutingPolicy
@@ -32,6 +33,7 @@ enum class AppFilterMode {
 }
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
+    private val app: Application = application
     private val repository = VpnRepository(application)
 
     val vpnStatus: StateFlow<VpnStatus> = SshVpnService.vpnStatus
@@ -177,7 +179,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun openAddServerDialog() {
         _editingServer.value = SshServerProfile(
-            name = "New SSH Server",
+            name = app.getString(R.string.new_server_name),
             host = "",
             port = 22,
             username = "root",
@@ -185,12 +187,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             keepAliveIntervalSeconds = 15
         )
         _testConnectionResult.value = null
+        _isTestFailed.value = false
         _isServerDialogOpen.value = true
     }
 
     fun openEditServerDialog(server: SshServerProfile) {
         _editingServer.value = server
         _testConnectionResult.value = null
+        _isTestFailed.value = false
         _isServerDialogOpen.value = true
     }
 
@@ -198,6 +202,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _isServerDialogOpen.value = false
         _editingServer.value = null
         _testConnectionResult.value = null
+        _isTestFailed.value = false
     }
 
     /** Saves without a successful test (e.g. the server is temporarily unreachable). */
@@ -226,28 +231,34 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _isTestSuccessful = MutableStateFlow(false)
     val isTestSuccessful: StateFlow<Boolean> = _isTestSuccessful.asStateFlow()
 
+    /** The last test finished with an error (the message itself is localized, so not parsed). */
+    private val _isTestFailed = MutableStateFlow(false)
+    val isTestFailed: StateFlow<Boolean> = _isTestFailed.asStateFlow()
+
     private var verifiedProfileHash: Int? = null
 
     fun testServer(profile: SshServerProfile, onComplete: ((Boolean, String) -> Unit)? = null) {
         viewModelScope.launch {
             _isTesting.value = true
             _isTestSuccessful.value = false
-            _testConnectionResult.value = "Testing SSH connection & authentication to ${profile.host}:${profile.port}..."
+            _isTestFailed.value = false
+            _testConnectionResult.value = app.getString(R.string.test_in_progress, profile.host, profile.port)
             val result = withContext(Dispatchers.IO) {
-                SshTunnelClient(null).testSshAuthentication(profile)
+                SshTunnelClient(app, null).testSshAuthentication(profile)
             }
             _isTesting.value = false
             if (result.isSuccess) {
                 val ping = result.getOrNull() ?: 0L
-                val msg = "Connection & Auth verified! Latency: ${ping}ms"
+                val msg = app.getString(R.string.test_ok, ping)
                 _testConnectionResult.value = msg
                 _isTestSuccessful.value = true
                 verifiedProfileHash = computeProfileHash(profile)
                 onComplete?.invoke(true, msg)
             } else {
-                val err = result.exceptionOrNull()?.message ?: "Connection test failed."
-                _testConnectionResult.value = "Error: $err"
+                val err = result.exceptionOrNull()?.message ?: app.getString(R.string.test_failed_generic)
+                _testConnectionResult.value = app.getString(R.string.test_error, err)
                 _isTestSuccessful.value = false
+                _isTestFailed.value = true
                 verifiedProfileHash = null
                 onComplete?.invoke(false, err)
             }

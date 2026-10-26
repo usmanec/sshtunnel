@@ -62,6 +62,8 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
+import top.rootu.ssh.tunnel.R
 import top.rootu.ssh.tunnel.ui.util.tvFocusVisual
 import top.rootu.ssh.tunnel.ui.util.tvCardFocusable
 import kotlinx.coroutines.delay
@@ -108,7 +110,7 @@ fun HomeScreen(
         if (result.resultCode == android.app.Activity.RESULT_OK) {
             viewModel.startVpn(context, activeServer?.id)
         } else {
-            Toast.makeText(context, "VPN permission was not granted", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, context.getString(R.string.toast_permission_denied), Toast.LENGTH_LONG).show()
         }
     }
 
@@ -224,8 +226,7 @@ fun HomeScreen(
                                         vpnPrepareLauncher.launch(prepareIntent)
                                     } catch (e: ActivityNotFoundException) {
                                         // Some Android TV firmwares ship without the VPN consent dialog
-                                        val hint = "This TV has no VPN permission dialog. Grant it once via ADB: " +
-                                            "adb shell appops set ${context.packageName} ACTIVATE_VPN allow"
+                                        val hint = context.getString(R.string.tv_no_permission_dialog, context.packageName)
                                         SshVpnService.log(hint, isError = true)
                                         Toast.makeText(context, hint, Toast.LENGTH_LONG).show()
                                     }
@@ -251,21 +252,22 @@ fun HomeScreen(
                     } else {
                         Icon(
                             imageVector = Icons.Default.PowerSettingsNew,
-                            contentDescription = if (isConnected) "Disconnect VPN" else "Connect VPN",
+                            contentDescription = stringResource(if (isConnected) R.string.cd_disconnect else R.string.cd_connect),
                             tint = buttonColor,
                             modifier = Modifier.size(52.dp)
                         )
                     }
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = when (vpnStatus) {
-                            VpnStatus.CONNECTED -> "CONNECTED"
-                            VpnStatus.IDLE_SUSPENDED -> "CONNECTED"
-                            VpnStatus.CONNECTING -> "CONNECTING"
-                            VpnStatus.RECONNECTING -> "RETRYING"
-                            VpnStatus.ERROR -> "RECONNECT"
-                            else -> if (activeServer == null) "ADD SERVER" else "CONNECT"
-                        },
+                        text = stringResource(
+                            when (vpnStatus) {
+                                VpnStatus.CONNECTED, VpnStatus.IDLE_SUSPENDED -> R.string.power_connected
+                                VpnStatus.CONNECTING -> R.string.power_connecting
+                                VpnStatus.RECONNECTING -> R.string.power_retrying
+                                VpnStatus.ERROR -> R.string.power_reconnect
+                                else -> if (activeServer == null) R.string.power_add_server else R.string.power_connect
+                            }
+                        ),
                         style = MaterialTheme.typography.labelLarge.copy(
                             fontWeight = FontWeight.Bold,
                             color = buttonColor,
@@ -309,21 +311,21 @@ fun HomeScreen(
                 ) {
                     Icon(
                         imageVector = Icons.Default.BatteryChargingFull,
-                        contentDescription = "Smart Battery Saver",
+                        contentDescription = null,
                         tint = EmeraldSuccess,
                         modifier = Modifier.size(24.dp)
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
                         Text(
-                            text = "Idle Mode",
+                            text = stringResource(R.string.idle_title),
                             style = MaterialTheme.typography.titleMedium.copy(
                                 fontWeight = FontWeight.SemiBold,
                                 color = TextPrimary
                             )
                         )
                         Text(
-                            text = "No traffic from routed apps right now: statistics refresh less often and latency checks are paused. The tunnel stays connected.",
+                            text = stringResource(R.string.idle_text),
                             style = MaterialTheme.typography.bodyMedium.copy(color = TextSecondary)
                         )
                     }
@@ -336,12 +338,12 @@ fun HomeScreen(
 @Composable
 private fun StatusBadge(vpnStatus: VpnStatus, durationSeconds: Long) {
     val (statusText, badgeColor) = when (vpnStatus) {
-        VpnStatus.CONNECTED -> "ACTIVE • ${formatDuration(durationSeconds)}" to EmeraldSuccess
-        VpnStatus.IDLE_SUSPENDED -> "ACTIVE (IDLE) • ${formatDuration(durationSeconds)}" to EmeraldSuccess
-        VpnStatus.CONNECTING -> "CONNECTING TO SSH..." to CyanPrimary
-        VpnStatus.RECONNECTING -> "RECONNECTING (APPS BLOCKED)..." to AmberWarning
-        VpnStatus.ERROR -> "CONNECTION FAILED" to RedError
-        VpnStatus.DISCONNECTED -> "DISCONNECTED" to TextMuted
+        VpnStatus.CONNECTED -> stringResource(R.string.status_active, formatDuration(durationSeconds)) to EmeraldSuccess
+        VpnStatus.IDLE_SUSPENDED -> stringResource(R.string.status_active_idle, formatDuration(durationSeconds)) to EmeraldSuccess
+        VpnStatus.CONNECTING -> stringResource(R.string.status_connecting) to CyanPrimary
+        VpnStatus.RECONNECTING -> stringResource(R.string.status_reconnecting) to AmberWarning
+        VpnStatus.ERROR -> stringResource(R.string.status_error) to RedError
+        VpnStatus.DISCONNECTED -> stringResource(R.string.status_disconnected) to TextMuted
     }
 
     Box(
@@ -404,7 +406,7 @@ private fun ActiveServerCard(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Dns,
-                        contentDescription = "Server",
+                        contentDescription = stringResource(R.string.cd_server),
                         tint = CyanPrimary,
                         modifier = Modifier.size(22.dp)
                     )
@@ -412,14 +414,14 @@ private fun ActiveServerCard(
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
                     Text(
-                        text = server?.name ?: "No Server Configured",
+                        text = server?.name ?: stringResource(R.string.no_server),
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Bold,
                             color = TextPrimary
                         )
                     )
                     Text(
-                        text = if (server != null) "${server.username}@${server.host}:${server.port}" else "Tap to add SSH server",
+                        text = if (server != null) "${server.username}@${server.host}:${server.port}" else stringResource(R.string.no_server_hint),
                         style = MaterialTheme.typography.labelSmall.copy(color = TextSecondary)
                     )
                     if (pingMs != null) {
@@ -433,7 +435,7 @@ private fun ActiveServerCard(
                                 else -> RedError
                             }
                             Text(
-                                text = "Ping: ${pingMs}ms",
+                                text = stringResource(R.string.ping_value, pingMs),
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     color = pingColor,
                                     fontWeight = FontWeight.Bold
@@ -455,11 +457,11 @@ private fun ActiveServerCard(
             ) {
                 Icon(
                     imageVector = Icons.Default.SwapHoriz,
-                    contentDescription = "Switch",
+                    contentDescription = null,
                     modifier = Modifier.size(16.dp)
                 )
                 Spacer(modifier = Modifier.width(4.dp))
-                Text(if (server == null) "Add" else "Switch", style = MaterialTheme.typography.labelLarge)
+                Text(stringResource(if (server == null) R.string.btn_add else R.string.btn_switch), style = MaterialTheme.typography.labelLarge)
             }
         }
     }
@@ -476,17 +478,17 @@ private fun TelemetryGrid(stats: top.rootu.ssh.tunnel.data.model.VpnStats, isCon
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             TelemetryCard(
-                title = "DOWNLOAD",
+                title = stringResource(R.string.telemetry_download),
                 value = stats.formatSpeed(if (isConnected) stats.speedInBps else 0L),
-                subValue = "Total: ${stats.formatBytes(stats.bytesIn)}",
+                subValue = stringResource(R.string.telemetry_total, stats.formatBytes(stats.bytesIn)),
                 icon = Icons.Default.ArrowDownward,
                 iconColor = CyanPrimary,
                 modifier = Modifier.weight(1f)
             )
             TelemetryCard(
-                title = "UPLOAD",
+                title = stringResource(R.string.telemetry_upload),
                 value = stats.formatSpeed(if (isConnected) stats.speedOutBps else 0L),
-                subValue = "Total: ${stats.formatBytes(stats.bytesOut)}",
+                subValue = stringResource(R.string.telemetry_total, stats.formatBytes(stats.bytesOut)),
                 icon = Icons.Default.ArrowUpward,
                 iconColor = EmeraldSuccess,
                 modifier = Modifier.weight(1f)
@@ -497,17 +499,17 @@ private fun TelemetryGrid(stats: top.rootu.ssh.tunnel.data.model.VpnStats, isCon
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             TelemetryCard(
-                title = "LATENCY (PING)",
-                value = if (stats.pingMs != null && isConnected) "${stats.pingMs} ms" else "-- ms",
-                subValue = if (stats.pingMs != null) "Real-time SSH" else "Standby",
+                title = stringResource(R.string.telemetry_latency),
+                value = if (stats.pingMs != null && isConnected) stringResource(R.string.unit_ms, stats.pingMs) else stringResource(R.string.latency_none),
+                subValue = stringResource(if (stats.pingMs != null) R.string.latency_live else R.string.latency_standby),
                 icon = Icons.Default.Speed,
                 iconColor = if (stats.pingMs != null && stats.pingMs < 120) EmeraldSuccess else AmberWarning,
                 modifier = Modifier.weight(1f)
             )
             TelemetryCard(
-                title = "TOTAL TRAFFIC",
+                title = stringResource(R.string.telemetry_total_traffic),
                 value = stats.formatBytes(stats.bytesIn + stats.bytesOut),
-                subValue = "${stats.activeConnections} active sockets",
+                subValue = stringResource(R.string.active_sockets, stats.activeConnections),
                 icon = Icons.Default.Security,
                 iconColor = AmberWarning,
                 modifier = Modifier.weight(1f)
@@ -592,23 +594,23 @@ private fun SplitTunnelingCard(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Per-App Routing (Split Tunnel)",
+                        text = stringResource(R.string.split_title),
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Bold,
                             color = TextPrimary
                         )
                     )
                     val policyDesc = if (routingPolicy == RoutingPolicy.ROUTE_ONLY_SELECTED) {
-                        "Only selected apps go through SSH (all others direct)"
+                        stringResource(R.string.split_only_selected)
                     } else {
-                        "All traffic through SSH (except selected apps)"
+                        stringResource(R.string.split_all_except)
                     }
                     Text(
                         text = policyDesc,
                         style = MaterialTheme.typography.bodyMedium.copy(color = TextSecondary)
                     )
                     Text(
-                        text = "$selectedCount app(s) configured",
+                        text = stringResource(R.string.apps_configured, selectedCount),
                         style = MaterialTheme.typography.labelSmall.copy(
                             color = if (selectedCount == 0 && routingPolicy == RoutingPolicy.ROUTE_ONLY_SELECTED) AmberWarning else CyanPrimary,
                             fontWeight = FontWeight.SemiBold
@@ -617,7 +619,7 @@ private fun SplitTunnelingCard(
                     )
                     if (selectedCount == 0 && routingPolicy == RoutingPolicy.ROUTE_ONLY_SELECTED) {
                         Text(
-                            text = "No apps selected. Tap to choose apps to route via SSH.",
+                            text = stringResource(R.string.no_apps_hint),
                             style = MaterialTheme.typography.labelSmall.copy(
                                 color = AmberWarning,
                                 fontSize = 11.sp
@@ -638,7 +640,7 @@ private fun SplitTunnelingCard(
                         .tvFocusVisual(shape = RoundedCornerShape(10.dp))
                         .testTag("manage_apps_button")
                 ) {
-                    Text("Select Apps", style = MaterialTheme.typography.labelLarge)
+                    Text(stringResource(R.string.btn_select_apps), style = MaterialTheme.typography.labelLarge)
                 }
             }
         }

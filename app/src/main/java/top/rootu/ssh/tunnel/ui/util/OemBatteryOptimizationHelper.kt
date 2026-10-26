@@ -171,38 +171,20 @@ object OemBatteryOptimizationHelper {
         }
     }
 
-    fun getOemInstructions(brand: OemBrand): List<String> {
-        return when (brand) {
-            OemBrand.XIAOMI -> listOf(
-                "1. Автозапуск (Autostart): Включите тумблер для этого приложения.",
-                "2. Контроль активности (MIUI Battery Saver): Выберите «Нет ограничений» (No restrictions), иначе MIUI закрывает SSH-туннель после блокировки экрана.",
-                "3. Меню недавних (Recents): Зажмите карточку приложения и нажмите значок «Замок», чтобы система не очищала процесс из памяти."
-            )
-            OemBrand.HUAWEI -> listOf(
-                "1. Запуск приложений (App Launch): Переключите управление с «Автоматически» на «Вручную».",
-                "2. Разрешите все три пункта: Автозапуск, Косвенный запуск и Работа в фоновом режиме.",
-                "3. Закрепите приложение в списке недавних задач (замочек)."
-            )
-            OemBrand.SAMSUNG -> listOf(
-                "1. Батарея -> Ограничения в фоновом режиме: Добавьте приложение в «Приложения, которые никогда не спят» (Never sleeping apps).",
-                "2. Отключите пункт «Переводить неиспользуемые приложения в режим сна».",
-                "3. Отключите оптимизацию расхода аккумулятора."
-            )
-            OemBrand.OPPO_REALME -> listOf(
-                "1. Управление автозапуском: Разрешите автозапуск приложения.",
-                "2. Расход заряда в фоновом режиме: Разрешите неограниченную фоновую активность.",
-                "3. Зафиксируйте приложение замком в списке недавних."
-            )
-            OemBrand.VIVO -> listOf(
-                "1. Управление питанием в фоновом режиме: Выберите «Высокое энергопотребление в фоновом режиме».",
-                "2. Автозапуск: Разрешите автоматический запуск приложения.",
-                "3. Закрепите в недавних."
-            )
-            OemBrand.GENERIC -> listOf(
-                "1. Батарея -> Оптимизация батареи: Выберите «Не оптимизировать» / «Без ограничений».",
-                "2. Фоновая передача данных: Разрешите передачу данных без ограничений.",
-                "3. Всегда включенный VPN: В настройках Android включите «Постоянная VPN-сеть»."
-            )
+    /** Step-by-step instructions in the device language (string arrays in resources). */
+    fun getOemInstructions(context: Context, brand: OemBrand): List<String> {
+        val arrayRes = when (brand) {
+            OemBrand.XIAOMI -> R.array.oem_steps_xiaomi
+            OemBrand.HUAWEI -> R.array.oem_steps_huawei
+            OemBrand.SAMSUNG -> R.array.oem_steps_samsung
+            OemBrand.OPPO_REALME -> R.array.oem_steps_oppo
+            OemBrand.VIVO -> R.array.oem_steps_vivo
+            OemBrand.GENERIC -> R.array.oem_steps_generic
         }
+        return context.resources.getStringArray(arrayRes).toList()
     }
+
+    /** Brand names are not translated, only the generic one. */
+    fun brandName(context: Context, brand: OemBrand): String =
+        if (brand == OemBrand.GENERIC) context.getString(R.string.oem_generic) else brand.displayName
 }

@@ -1,0 +1,290 @@
+<resources>
+    <!-- Навигация -->
+    <string name="nav_home">Главная</string>
+    <string name="nav_apps">Приложения</string>
+    <string name="nav_servers">Серверы</string>
+    <string name="nav_logs">Журнал</string>
+    <string name="nav_settings">Настройки</string>
+    <string name="title_apps">Приложения в тоннеле</string>
+    <string name="title_servers">SSH-серверы</string>
+    <string name="title_logs">Журнал подключений</string>
+    <string name="title_settings">Настройки</string>
+    <string name="tv_mode">РЕЖИМ ТВ</string>
+
+    <!-- Общее -->
+    <string name="btn_cancel">Отмена</string>
+    <string name="btn_close">Закрыть</string>
+    <string name="btn_delete">Удалить</string>
+    <string name="btn_edit">Изменить</string>
+    <string name="btn_apply">Применить</string>
+    <string name="btn_reconnect">Переподключить</string>
+    <string name="reconnect_banner">Настройки маршрутизации изменены. Переподключитесь, чтобы применить их.</string>
+    <string name="press_ok_to_edit">Нажмите OK для ввода</string>
+    <string name="unit_ms">%1$d мс</string>
+
+    <!-- Главная -->
+    <string name="toast_permission_denied">Разрешение на тоннель не выдано</string>
+    <string name="tv_no_permission_dialog">На этом ТВ нет окна разрешения для тоннеля. Выдайте его один раз через ADB: adb shell appops set %1$s ACTIVATE_VPN allow</string>
+    <string name="cd_connect">Подключить</string>
+    <string name="cd_disconnect">Отключить</string>
+    <string name="power_connected">ПОДКЛЮЧЕНО</string>
+    <string name="power_connecting">ПОДКЛЮЧЕНИЕ</string>
+    <string name="power_retrying">ПОВТОР</string>
+    <string name="power_reconnect">ПОВТОРИТЬ</string>
+    <string name="power_add_server">ДОБАВИТЬ СЕРВЕР</string>
+    <string name="power_connect">ПОДКЛЮЧИТЬ</string>
+    <string name="idle_title">Режим простоя</string>
+    <string name="idle_text">Выбранные приложения сейчас не передают данные: статистика обновляется реже, замеры задержки приостановлены. Тоннель остаётся подключённым.</string>
+    <string name="status_active">АКТИВЕН • %1$s</string>
+    <string name="status_active_idle">АКТИВЕН (ПРОСТОЙ) • %1$s</string>
+    <string name="status_connecting">ПОДКЛЮЧЕНИЕ К SSH…</string>
+    <string name="status_reconnecting">ПЕРЕПОДКЛЮЧЕНИЕ (ПРИЛОЖЕНИЯ ЗАБЛОКИРОВАНЫ)…</string>
+    <string name="status_error">ОШИБКА ПОДКЛЮЧЕНИЯ</string>
+    <string name="status_disconnected">ОТКЛЮЧЕНО</string>
+    <string name="cd_server">Сервер</string>
+    <string name="no_server">Сервер не настроен</string>
+    <string name="no_server_hint">Добавьте SSH-сервер для подключения</string>
+    <string name="ping_value">Пинг: %1$d мс</string>
+    <string name="btn_add">Добавить</string>
+    <string name="btn_switch">Сменить</string>
+    <string name="telemetry_download">ЗАГРУЗКА</string>
+    <string name="telemetry_upload">ОТДАЧА</string>
+    <string name="telemetry_total">Всего: %1$s</string>
+    <string name="telemetry_latency">ЗАДЕРЖКА (ПИНГ)</string>
+    <string name="latency_none">-- мс</string>
+    <string name="latency_live">SSH в реальном времени</string>
+    <string name="latency_standby">Ожидание</string>
+    <string name="telemetry_total_traffic">ВСЕГО ТРАФИКА</string>
+    <string name="active_sockets">Активных соединений: %1$d</string>
+    <string name="split_title">Маршрутизация приложений</string>
+    <string name="split_only_selected">Через SSH идут только выбранные приложения (остальные напрямую)</string>
+    <string name="split_all_except">Весь трафик идёт через SSH (кроме выбранных приложений)</string>
+    <string name="apps_configured">Выбрано приложений: %1$d</string>
+    <string name="no_apps_hint">Приложения не выбраны. Выберите, какие приложения пустить через SSH.</string>
+    <string name="btn_select_apps">Выбрать</string>
+
+    <!-- Серверы -->
+    <string name="servers_header">SSH-СЕРВЕРЫ (%1$d)</string>
+    <string name="servers_hint">OK на сервере делает его активным (работающий тоннель переключится)</string>
+    <string name="btn_add_server">Добавить сервер</string>
+    <string name="servers_empty">SSH-серверы ещё не добавлены</string>
+    <string name="servers_empty_hint">Нажмите «Добавить сервер», чтобы добавить и проверить сервер</string>
+    <string name="delete_title">Удалить SSH-сервер?</string>
+    <string name="delete_text">Удалить профиль «%1$s» (%2$s)? Это действие нельзя отменить.</string>
+    <string name="cd_active_server">Активный сервер</string>
+    <string name="cd_make_active">Сделать активным</string>
+    <string name="badge_active">АКТИВЕН</string>
+    <string name="key_configured">Ключ сохранён</string>
+    <string name="toast_key_imported">SSH-ключ импортирован: %1$s</string>
+    <string name="toast_key_read_failed">Не удалось прочитать файл ключа</string>
+    <string name="toast_no_file_picker">На устройстве нет выбора файлов. Вставьте текст ключа.</string>
+    <string name="editor_title_add">Добавление SSH-сервера</string>
+    <string name="editor_title_edit">Изменение SSH-сервера</string>
+    <string name="editor_notice">Перед сохранением подключение проверяется, чтобы убедиться, что адрес, порт и данные для входа верны.</string>
+    <string name="field_profile_name">Название профиля</string>
+    <string name="hint_profile_name">например, Шлюз офиса, Тестовый стенд</string>
+    <string name="field_host">Хост / IP-адрес</string>
+    <string name="field_port">Порт</string>
+    <string name="field_username">Пользователь SSH</string>
+    <string name="auth_label">Способ входа</string>
+    <string name="auth_password">Пароль</string>
+    <string name="auth_key">Приватный ключ</string>
+    <string name="auth_key_password">Ключ + пароль</string>
+    <string name="key_file_title">Файл приватного ключа</string>
+    <string name="key_loaded">Ключ загружен (%1$d симв.)</string>
+    <string name="key_none">Файл ключа не выбран</string>
+    <string name="btn_pick_file">Выбрать файл</string>
+    <string name="btn_hide_key">Скрыть текст ключа</string>
+    <string name="btn_show_key">Показать / изменить текст ключа</string>
+    <string name="btn_remove">Удалить</string>
+    <string name="field_key_text">Текст приватного ключа (можно вставить)</string>
+    <string name="field_passphrase">Пароль ключа (только для зашифрованного ключа)</string>
+    <string name="hint_passphrase">Оставьте пустым, если ключ не зашифрован</string>
+    <string name="field_password">Пароль</string>
+    <string name="field_password_after_key">Пароль (отправляется после ключа)</string>
+    <string name="cd_toggle_password">Показать или скрыть пароль</string>
+    <string name="field_socks_port">Порт SOCKS5 (-D)</string>
+    <string name="field_keepalive">KeepAlive (сек)</string>
+    <string name="compression_title">Сжатие (zlib)</string>
+    <string name="compression_desc">Помогает на медленных каналах с текстовым трафиком; бесполезно для видео и уже сжатых данных</string>
+    <string name="verified_title">Подключение проверено</string>
+    <string name="verify_required">Нужна проверка</string>
+    <string name="ready_to_save">Можно сохранять</string>
+    <string name="test_before_save">Проверьте SSH-подключение перед сохранением</string>
+    <string name="btn_testing">Проверка…</string>
+    <string name="btn_retest">Проверить снова</string>
+    <string name="btn_test">Проверить подключение</string>
+    <string name="toast_server_saved">Сервер проверен и сохранён</string>
+    <string name="toast_cannot_save">Не удалось сохранить сервер: %1$s</string>
+    <string name="btn_verifying">Проверка…</string>
+    <string name="btn_save_server">Сохранить</string>
+    <string name="btn_test_and_save">Проверить и сохранить</string>
+    <string name="btn_save_anyway">Сохранить без проверки</string>
+    <string name="new_server_name">Новый SSH-сервер</string>
+    <string name="test_in_progress">Проверка подключения и входа на %1$s:%2$d…</string>
+    <string name="test_ok">Подключение и вход проверены. Задержка: %1$d мс</string>
+    <string name="test_failed_generic">Проверка подключения не удалась</string>
+    <string name="test_error">Ошибка: %1$s</string>
+
+    <!-- Приложения -->
+    <string name="routing_policy">РЕЖИМ МАРШРУТИЗАЦИИ</string>
+    <string name="policy_only_selected">Только выбранные</string>
+    <string name="policy_all_except">Все, кроме выбранных</string>
+    <string name="policy_only_selected_desc">Весь трафик устройства идёт напрямую. Через SSH-тоннель идут только отмеченные приложения.</string>
+    <string name="policy_all_except_desc">Весь трафик устройства идёт через SSH-тоннель, кроме отмеченных приложений.</string>
+    <string name="search_apps_hint">Поиск по названию или пакету (например, Chrome, telegram)…</string>
+    <string name="cd_search">Поиск</string>
+    <string name="cd_clear_search">Очистить поиск</string>
+    <string name="filter_user">Пользовательские</string>
+    <string name="filter_selected">Выбранные (%1$d)</string>
+    <string name="filter_all">Все</string>
+    <string name="filter_system">Системные</string>
+    <string name="apps_shown">Показано: %1$d (выбрано: %2$d)</string>
+    <string name="btn_select_shown">Выбрать показанные</string>
+    <string name="btn_clear_shown">Снять с показанных</string>
+    <string name="apps_empty">Нет приложений, подходящих под фильтр</string>
+    <string name="badge_sys">СИС</string>
+    <string name="cd_selected">Выбрано</string>
+    <string name="cd_not_selected">Не выбрано</string>
+
+    <!-- Журнал -->
+    <string name="logs_header">ЖУРНАЛ ПОДКЛЮЧЕНИЙ</string>
+    <string name="logs_count">Событий: %1$d</string>
+    <string name="toast_logs_copied">Журнал скопирован в буфер обмена</string>
+    <string name="cd_copy_logs">Скопировать журнал</string>
+    <string name="cd_clear_logs">Очистить журнал</string>
+    <string name="logs_empty">Записей пока нет</string>
+    <string name="logs_empty_hint">События подключения появятся здесь в реальном времени</string>
+
+    <!-- Настройки -->
+    <string name="section_reliability">НАДЁЖНОСТЬ И АВТОМАТИЗАЦИЯ</string>
+    <string name="auto_reconnect_title">Автопереподключение</string>
+    <string name="auto_reconnect_desc">Восстанавливать тоннель после смены сети или обрыва SSH. Пока идёт переподключение, выбранные приложения заблокированы, поэтому трафик не уходит мимо тоннеля.</string>
+    <string name="boot_title">Автозапуск при включении</string>
+    <string name="boot_desc">Подключаться автоматически после включения устройства или Android TV</string>
+    <string name="section_network">СЕТЬ И DNS</string>
+    <string name="bypass_lan_title">Локальная сеть напрямую (LAN)</string>
+    <string name="bypass_lan_desc">Выбранные приложения обращаются к устройствам локальной сети (NAS, DLNA, Chromecast, роутер) напрямую. Интернет-трафик по-прежнему идёт через SSH.</string>
+    <string name="dns_title">DNS-сервер тоннеля: %1$s</string>
+    <string name="dns_desc">DNS-запросы выбранных приложений разрешает этот сервер через SSH-тоннель (DNS по TCP). Укажите публичный сервер: локальные адреса недоступны со стороны SSH-сервера.</string>
+    <string name="field_custom_dns">Свой DNS (IPv4)</string>
+    <string name="hint_custom_dns">например, 94.140.14.14</string>
+    <string name="error_dns">Введите публичный IPv4-адрес, например 1.1.1.1</string>
+    <string name="section_battery">ЭКОНОМИЯ ЗАРЯДА И РЕСУРСОВ</string>
+    <string name="idle_mode_title">Режим простоя</string>
+    <string name="idle_mode_desc">Когда выбранные приложения не активны, статистика обновляется реже, а замеры задержки приостанавливаются</string>
+    <string name="idle_after">Простой через:</string>
+    <string name="seconds_short">%1$d с</string>
+    <string name="minutes_short">%1$d мин</string>
+    <string name="screen_off_title">Экономия при выключенном экране</string>
+    <string name="screen_off_desc">При выключенном экране статистика обновляется раз в 15 с, замеры задержки приостанавливаются</string>
+    <string name="radio_saver_title">Экономия радиомодуля (keepalive от 60 с)</string>
+    <string name="radio_saver_desc">SSH keepalive отправляется не чаще раза в минуту, чтобы Wi-Fi и мобильный модем реже просыпались. Обрыв соединения обнаруживается медленнее.</string>
+    <string name="section_background">РАБОТА В ФОНЕ</string>
+    <string name="device_protection">Защита устройства: %1$s</string>
+    <string name="battery_opt_off">Оптимизация батареи отключена (сервис защищён от сна)</string>
+    <string name="battery_opt_on">Оптимизация батареи включена (система может остановить тоннель в фоне)</string>
+    <string name="btn_recheck">Проверить снова</string>
+    <string name="btn_disable_opt">Отключить оптимизацию</string>
+    <string name="btn_autostart_settings">Настройки автозапуска</string>
+    <string name="btn_oem_guide">Пошаговая инструкция для %1$s</string>
+    <string name="socks_info_title">Динамический проброс SSH (-D)</string>
+    <string name="socks_info_text">Аналог команды: ssh -D %1$d %2$s\n\nПриложения с поддержкой SOCKS5 на этом устройстве также могут использовать 127.0.0.1:%1$d, пока тоннель подключён.</string>
+    <string name="tv_info_title">Пульт Android TV и постоянное подключение</string>
+    <string name="tv_info_text">• Стрелки — перемещение, OK — выбор или переключение, Назад — возврат на главный экран.\n• На главном экране OK на большой кнопке подключает или отключает тоннель.\n• «Автозапуск при включении» подключает ТВ-приставку сразу после включения.\n• Постоянное подключение: Настройки Android → Сеть и Интернет → VPN → SSH Tunnel → «Постоянная VPN».</string>
+    <string name="oem_dialog_title">Работа в фоне: %1$s</string>
+    <string name="oem_dialog_text">Чтобы тоннель работал в фоне на %1$s:</string>
+    <string name="btn_open_settings">Открыть настройки</string>
+    <string name="oem_generic">Стандартный Android</string>
+    <string-array name="oem_steps_xiaomi">
+        <item>1. Автозапуск (Autostart): включите тумблер для этого приложения.</item>
+        <item>2. Контроль активности (Battery Saver): выберите «Нет ограничений», иначе MIUI закрывает SSH-тоннель после блокировки экрана.</item>
+        <item>3. Меню недавних: зажмите карточку приложения и нажмите значок замка, чтобы система не выгружала процесс.</item>
+    </string-array>
+    <string-array name="oem_steps_huawei">
+        <item>1. Запуск приложений: переключите управление с «Автоматически» на «Вручную».</item>
+        <item>2. Разрешите все три пункта: автозапуск, косвенный запуск и работу в фоновом режиме.</item>
+        <item>3. Закрепите приложение в списке недавних задач (замок).</item>
+    </string-array>
+    <string-array name="oem_steps_samsung">
+        <item>1. Батарея → Ограничения в фоновом режиме: добавьте приложение в «Приложения, которые никогда не спят».</item>
+        <item>2. Отключите «Переводить неиспользуемые приложения в режим сна».</item>
+        <item>3. Отключите оптимизацию расхода аккумулятора.</item>
+    </string-array>
+    <string-array name="oem_steps_oppo">
+        <item>1. Управление автозапуском: разрешите автозапуск приложения.</item>
+        <item>2. Расход заряда в фоновом режиме: разрешите неограниченную фоновую активность.</item>
+        <item>3. Закрепите приложение замком в списке недавних.</item>
+    </string-array>
+    <string-array name="oem_steps_vivo">
+        <item>1. Управление питанием в фоне: выберите «Высокое энергопотребление в фоновом режиме».</item>
+        <item>2. Автозапуск: разрешите автоматический запуск приложения.</item>
+        <item>3. Закрепите приложение в недавних.</item>
+    </string-array>
+    <string-array name="oem_steps_generic">
+        <item>1. Батарея → Оптимизация батареи: выберите «Не оптимизировать» / «Без ограничений».</item>
+        <item>2. Фоновая передача данных: разрешите передачу данных без ограничений.</item>
+        <item>3. Постоянное подключение: в настройках Android включите «Постоянная VPN» для этого приложения.</item>
+    </string-array>
+
+    <!-- Сервис тоннеля: уведомления и журнал -->
+    <string name="channel_name">Состояние тоннеля</string>
+    <string name="channel_desc">Состояние подключения, скорость и трафик SSH-тоннеля</string>
+    <string name="notif_tap">Нажмите, чтобы открыть</string>
+    <string name="notif_action_disconnect">Отключить</string>
+    <string name="notif_starting">Запуск SSH Tunnel…</string>
+    <string name="notif_connecting">Подключение к %1$s…</string>
+    <string name="notif_connected">Подключено к %1$s</string>
+    <string name="notif_connected_short">Подключено: %1$s</string>
+    <string name="notif_connected_idle">Подключено (простой): %1$s</string>
+    <string name="notif_stats">↓ %1$s  ↑ %2$s • Всего: %3$s</string>
+    <string name="notif_reconnecting">Переподключение к %1$s…</string>
+    <string name="notif_reconnecting_text">Попытка %1$d • приложения заблокированы до восстановления тоннеля</string>
+    <string name="notif_stopped">SSH Tunnel остановлен</string>
+    <string name="session_name">SSH Tunnel (%1$s)</string>
+    <string name="log_disconnect_requested">Запрошено отключение</string>
+    <string name="log_started_by_system">Тоннель запущен системой (постоянное подключение или перезапуск сервиса)</string>
+    <string name="log_no_server">Профиль SSH-сервера не найден. Сначала добавьте сервер.</string>
+    <string name="reason_no_server">SSH-сервер не настроен</string>
+    <string name="log_starting">Запуск тоннеля для %1$s (%2$s:%3$d)</string>
+    <string name="log_socks_busy">Не удалось открыть порт SOCKS5 %1$d: %2$s. Выберите другой порт в настройках сервера.</string>
+    <string name="reason_socks_busy">Порт SOCKS5 %1$d занят</string>
+    <string name="log_socks_listening">Локальный SOCKS5-прокси слушает 127.0.0.1:%1$d</string>
+    <string name="log_tun_started">Маршрутизатор пакетов запущен: TCP и DNS → SOCKS5 127.0.0.1:%1$d → SSH</string>
+    <string name="log_tun_closed">Интерфейс тоннеля закрыт, маршрутизатор пакетов остановлен</string>
+    <string name="log_active">Тоннель АКТИВЕН: трафик приложений → TUN → SOCKS5 → SSH %1$s</string>
+    <string name="log_not_retrying">Повтора не будет: проверьте имя пользователя, пароль или ключ для %1$s.</string>
+    <string name="reason_auth_failed">Ошибка входа на %1$s</string>
+    <string name="log_autoreconnect_off">Автопереподключение выключено, тоннель остановлен.</string>
+    <string name="reason_connection_lost">SSH-соединение потеряно</string>
+    <string name="log_reconnect_in">Попытка переподключения %1$d через %2$d с (раньше, если сменится сеть)</string>
+    <string name="log_session_lost">SSH-сессия потеряна.</string>
+    <string name="log_network_changed">Сеть изменилась, SSH-сессия устанавливается заново.</string>
+    <string name="log_no_apps">Не выбраны приложения для тоннеля. Выберите их на вкладке «Приложения» или включите режим «Все, кроме выбранных».</string>
+    <string name="reason_no_apps">Не выбраны приложения для тоннеля</string>
+    <string name="log_cannot_route">Не удалось направить %1$s в тоннель: %2$s</string>
+    <string name="log_routing_selected">Через тоннель идут выбранные приложения: %1$d</string>
+    <string name="log_routing_all">Через тоннель идут все приложения, кроме исключённых: %1$d</string>
+    <string name="log_lan_bypassed">" (локальная сеть напрямую)"</string>
+    <string name="log_tun_failed">Не удалось создать интерфейс тоннеля: %1$s</string>
+    <string name="log_tun_refused">Android отказался создать интерфейс тоннеля (разрешение отозвано?)</string>
+    <string name="reason_permission">Нужно разрешение на тоннель</string>
+    <string name="log_idle">Нет трафика %1$d с: режим простоя (реже пробуждения, замеры задержки на паузе)</string>
+    <string name="log_traffic_resumed">Трафик возобновился</string>
+    <string name="log_network_monitor_unavailable">Отслеживание сети недоступно: %1$s</string>
+    <string name="log_revoked">Android отозвал разрешение на тоннель (запущено другое приложение-тоннель?)</string>
+    <string name="log_boot_no_permission">Автозапуск пропущен: сначала один раз выдайте разрешение на тоннель в приложении.</string>
+    <string name="log_boot_start">Устройство загружено: автозапуск тоннеля для %1$s…</string>
+    <string name="log_boot_failed">Автозапуск не удался: %1$s</string>
+
+    <!-- SSH -->
+    <string name="log_ssh_connecting">Подключение к %1$s…</string>
+    <string name="log_ssh_established">SSH-сессия установлена (%1$s)</string>
+    <string name="log_ssh_failed">Не удалось подключиться по SSH: %1$s</string>
+    <string name="log_ssh_disconnecting">Отключение SSH-сессии…</string>
+    <string name="err_auth">Ошибка входа: неверное имя пользователя, пароль или SSH-ключ</string>
+    <string name="err_key">Неверный формат приватного ключа или неверный пароль ключа</string>
+    <string name="err_timeout">Истекло время подключения к %1$s:%2$d</string>
+    <string name="err_refused">В подключении на порт %1$d отказано</string>
+    <string name="err_unknown_host">Неизвестный хост: %1$s</string>
+</resources>

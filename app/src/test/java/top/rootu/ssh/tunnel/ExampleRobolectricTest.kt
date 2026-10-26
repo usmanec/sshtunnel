@@ -8,6 +8,8 @@ import top.rootu.ssh.tunnel.data.model.VpnStats
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Test
+import top.rootu.ssh.tunnel.ui.util.OemBatteryOptimizationHelper
+import top.rootu.ssh.tunnel.ui.util.OemBatteryOptimizationHelper.OemBrand
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
@@ -58,15 +60,31 @@ class ExampleRobolectricTest {
 
   @Test
   fun `verify oem battery helper instructions`() {
-    val instructionsXiaomi = top.rootu.ssh.tunnel.ui.util.OemBatteryOptimizationHelper.getOemInstructions(
-      top.rootu.ssh.tunnel.ui.util.OemBatteryOptimizationHelper.OemBrand.XIAOMI
-    )
+    val context = ApplicationProvider.getApplicationContext<Context>()
+    val instructionsXiaomi = OemBatteryOptimizationHelper.getOemInstructions(context, OemBrand.XIAOMI)
     assertEquals(3, instructionsXiaomi.size)
-    assert(instructionsXiaomi[0].contains("Автозапуск"))
-    assert(instructionsXiaomi[1].contains("Контроль активности"))
+    assert(instructionsXiaomi[0].contains("Autostart"))
 
-    val brand = top.rootu.ssh.tunnel.ui.util.OemBatteryOptimizationHelper.getDetectedBrand()
+    val brand = OemBatteryOptimizationHelper.getDetectedBrand()
     assertNotNull(brand)
+  }
+
+  @Test
+  @Config(qualifiers = "ru")
+  fun `russian translation is used for russian locale`() {
+    val context = ApplicationProvider.getApplicationContext<Context>()
+    val instructionsXiaomi = OemBatteryOptimizationHelper.getOemInstructions(context, OemBrand.XIAOMI)
+    assert(instructionsXiaomi[0].contains("Автозапуск"))
+    assertEquals("Стандартный Android", OemBatteryOptimizationHelper.brandName(context, OemBrand.GENERIC))
+    assertEquals("Главная", context.getString(R.string.nav_home))
+    assertEquals("Подключено к srv", context.getString(R.string.notif_connected, "srv"))
+  }
+
+  @Test
+  fun `english is the default language`() {
+    val context = ApplicationProvider.getApplicationContext<Context>()
+    assertEquals("Home", context.getString(R.string.nav_home))
+    assertEquals("Connected to srv", context.getString(R.string.notif_connected, "srv"))
   }
 
   @Test

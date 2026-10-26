@@ -51,6 +51,8 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
+import top.rootu.ssh.tunnel.R
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import top.rootu.ssh.tunnel.ui.util.tvFocusVisual
@@ -116,14 +118,14 @@ fun LogsScreen(
         ) {
             Column {
                 Text(
-                    text = "CONNECTION LOGS",
+                    text = stringResource(R.string.logs_header),
                     style = MaterialTheme.typography.labelSmall.copy(
                         color = TextMuted,
                         letterSpacing = 0.5.sp
                     )
                 )
                 Text(
-                    text = "${logs.size} events logged",
+                    text = stringResource(R.string.logs_count, logs.size),
                     style = MaterialTheme.typography.labelSmall.copy(color = TextSecondary)
                 )
             }
@@ -136,8 +138,8 @@ fun LogsScreen(
                             "[$time] [${entry.level}] ${entry.message}"
                         }
                         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                        clipboard.setPrimaryClip(ClipData.newPlainText("VPN Logs", text))
-                        Toast.makeText(context, "Logs copied to clipboard", Toast.LENGTH_SHORT).show()
+                        clipboard.setPrimaryClip(ClipData.newPlainText(context.getString(R.string.title_logs), text))
+                        Toast.makeText(context, context.getString(R.string.toast_logs_copied), Toast.LENGTH_SHORT).show()
                     },
                     modifier = Modifier
                         .size(48.dp)
@@ -147,7 +149,7 @@ fun LogsScreen(
                 ) {
                     Icon(
                         imageVector = Icons.Default.ContentCopy,
-                        contentDescription = "Copy logs",
+                        contentDescription = stringResource(R.string.cd_copy_logs),
                         tint = CyanPrimary,
                         modifier = Modifier.size(20.dp)
                     )
@@ -162,7 +164,7 @@ fun LogsScreen(
                 ) {
                     Icon(
                         imageVector = Icons.Default.DeleteSweep,
-                        contentDescription = "Clear logs",
+                        contentDescription = stringResource(R.string.cd_clear_logs),
                         tint = TextMuted,
                         modifier = Modifier.size(20.dp)
                     )
@@ -194,11 +196,11 @@ fun LogsScreen(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "No log entries yet",
+                            text = stringResource(R.string.logs_empty),
                             style = MaterialTheme.typography.bodyMedium.copy(color = TextMuted)
                         )
                         Text(
-                            text = "Connection events will appear here in real time",
+                            text = stringResource(R.string.logs_empty_hint),
                             style = MaterialTheme.typography.labelSmall.copy(color = TextMuted)
                         )
                     }

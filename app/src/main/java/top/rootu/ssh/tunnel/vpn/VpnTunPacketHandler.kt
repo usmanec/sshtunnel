@@ -39,7 +39,8 @@ import java.util.concurrent.atomic.AtomicLong
 class VpnTunPacketHandler(
     private val vpnInterface: ParcelFileDescriptor,
     private val socksPort: Int,
-    private val onLog: (String, Boolean) -> Unit
+    /** Called when the TUN interface goes away while the router is still running. */
+    private val onClosedUnexpectedly: () -> Unit
 ) {
     companion object {
         private const val MAX_PACKET = 65535
@@ -75,7 +76,6 @@ class VpnTunPacketHandler(
             isDaemon = true
             start()
         }
-        onLog("TUN router started: TCP and DNS -> SOCKS5 127.0.0.1:$socksPort -> SSH", false)
     }
 
     fun stop() {
@@ -124,7 +124,7 @@ class VpnTunPacketHandler(
                 break
             }
         }
-        if (running.get()) onLog("TUN interface closed, packet router stopped", false)
+        if (running.get()) onClosedUnexpectedly()
     }
 
     private fun writePacket(packet: ByteArray) {

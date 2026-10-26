@@ -30,6 +30,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
+import top.rootu.ssh.tunnel.R
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -106,7 +108,7 @@ fun ReconnectBanner(viewModel: MainViewModel, modifier: Modifier = Modifier) {
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text(
-            text = "Routing settings changed. Reconnect to apply them.",
+            text = stringResource(R.string.reconnect_banner),
             style = MaterialTheme.typography.bodyMedium.copy(color = AmberWarning, fontWeight = FontWeight.Medium),
             modifier = Modifier.weight(1f)
         )
@@ -120,7 +122,7 @@ fun ReconnectBanner(viewModel: MainViewModel, modifier: Modifier = Modifier) {
         ) {
             Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
             Spacer(modifier = Modifier.width(6.dp))
-            Text("Reconnect")
+            Text(stringResource(R.string.btn_reconnect))
         }
     }
 }

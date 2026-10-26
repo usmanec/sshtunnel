@@ -67,6 +67,8 @@ import kotlinx.coroutines.delay
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
+import top.rootu.ssh.tunnel.R
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -131,7 +133,7 @@ fun AppsScreen(
         ) {
             Column(modifier = Modifier.padding(12.dp)) {
                 Text(
-                    text = "ROUTING POLICY",
+                    text = stringResource(R.string.routing_policy),
                     style = MaterialTheme.typography.labelSmall.copy(
                         color = TextMuted,
                         letterSpacing = 0.5.sp
@@ -160,7 +162,7 @@ fun AppsScreen(
                             .tvFocusVisual(shape = RoundedCornerShape(8.dp)),
                         text = {
                             Text(
-                                "Route ONLY Selected",
+                                stringResource(R.string.policy_only_selected),
                                 style = MaterialTheme.typography.labelMedium.copy(
                                     fontWeight = if (routingPolicy == RoutingPolicy.ROUTE_ONLY_SELECTED) FontWeight.Bold else FontWeight.Normal
                                 )
@@ -173,7 +175,7 @@ fun AppsScreen(
                         modifier = Modifier.tvFocusVisual(shape = RoundedCornerShape(8.dp)),
                         text = {
                             Text(
-                                "Route ALL Except",
+                                stringResource(R.string.policy_all_except),
                                 style = MaterialTheme.typography.labelMedium.copy(
                                     fontWeight = if (routingPolicy == RoutingPolicy.ROUTE_ALL_EXCEPT) FontWeight.Bold else FontWeight.Normal
                                 )
@@ -185,9 +187,9 @@ fun AppsScreen(
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = if (routingPolicy == RoutingPolicy.ROUTE_ONLY_SELECTED)
-                        "Default mode: All device traffic goes direct. Only checked apps are routed via SSH tunnel."
+                        stringResource(R.string.policy_only_selected_desc)
                     else
-                        "Bypass mode: All device traffic is routed via SSH tunnel, except checked apps.",
+                        stringResource(R.string.policy_all_except_desc),
                     style = MaterialTheme.typography.bodyMedium.copy(color = TextSecondary)
                 )
             }
@@ -199,13 +201,13 @@ fun AppsScreen(
         TvTextField(
             value = searchQuery,
             onValueChange = { viewModel.appSearchQuery.value = it },
-            placeholder = "Search by name or package (e.g. Chrome, telegram)...",
+            placeholder = stringResource(R.string.search_apps_hint),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
             keyboardActions = KeyboardActions(onSearch = { focusManager.moveFocus(FocusDirection.Down) }),
             leadingIcon = {
                 Icon(
                     imageVector = Icons.Default.Search,
-                    contentDescription = "Search",
+                    contentDescription = stringResource(R.string.cd_search),
                     tint = CyanPrimary
                 )
             },
@@ -217,7 +219,7 @@ fun AppsScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Clear,
-                            contentDescription = "Clear search",
+                            contentDescription = stringResource(R.string.cd_clear_search),
                             tint = TextMuted
                         )
                     }
@@ -249,7 +251,7 @@ fun AppsScreen(
             FilterChip(
                 selected = filterMode == AppFilterMode.USER_ONLY,
                 onClick = { viewModel.appFilterMode.value = AppFilterMode.USER_ONLY },
-                label = { Text("User Apps") },
+                label = { Text(stringResource(R.string.filter_user)) },
                 colors = FilterChipDefaults.filterChipColors(
                     selectedContainerColor = CyanPrimary.copy(alpha = 0.2f),
                     selectedLabelColor = CyanPrimary
@@ -259,7 +261,7 @@ fun AppsScreen(
             FilterChip(
                 selected = filterMode == AppFilterMode.SELECTED_ONLY,
                 onClick = { viewModel.appFilterMode.value = AppFilterMode.SELECTED_ONLY },
-                label = { Text("Selected ($selectedCount)") },
+                label = { Text(stringResource(R.string.filter_selected, selectedCount)) },
                 colors = FilterChipDefaults.filterChipColors(
                     selectedContainerColor = CyanPrimary.copy(alpha = 0.2f),
                     selectedLabelColor = CyanPrimary
@@ -269,7 +271,7 @@ fun AppsScreen(
             FilterChip(
                 selected = filterMode == AppFilterMode.ALL,
                 onClick = { viewModel.appFilterMode.value = AppFilterMode.ALL },
-                label = { Text("All") },
+                label = { Text(stringResource(R.string.filter_all)) },
                 colors = FilterChipDefaults.filterChipColors(
                     selectedContainerColor = CyanPrimary.copy(alpha = 0.2f),
                     selectedLabelColor = CyanPrimary
@@ -279,7 +281,7 @@ fun AppsScreen(
             FilterChip(
                 selected = filterMode == AppFilterMode.SYSTEM_ONLY,
                 onClick = { viewModel.appFilterMode.value = AppFilterMode.SYSTEM_ONLY },
-                label = { Text("System") },
+                label = { Text(stringResource(R.string.filter_system)) },
                 colors = FilterChipDefaults.filterChipColors(
                     selectedContainerColor = CyanPrimary.copy(alpha = 0.2f),
                     selectedLabelColor = CyanPrimary
@@ -297,7 +299,7 @@ fun AppsScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "${filteredApps.size} apps shown (${selectedCount} selected)",
+                text = stringResource(R.string.apps_shown, filteredApps.size, selectedCount),
                 style = MaterialTheme.typography.labelSmall.copy(color = TextSecondary)
             )
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -308,7 +310,7 @@ fun AppsScreen(
                         .tvFocusVisual(shape = RoundedCornerShape(8.dp))
                         .testTag("select_all_apps_button")
                 ) {
-                    Text("Select Shown", style = MaterialTheme.typography.labelMedium.copy(color = CyanPrimary))
+                    Text(stringResource(R.string.btn_select_shown), style = MaterialTheme.typography.labelMedium.copy(color = CyanPrimary))
                 }
                 TextButton(
                     onClick = { viewModel.selectShownApps(false) },
@@ -317,7 +319,7 @@ fun AppsScreen(
                         .tvFocusVisual(shape = RoundedCornerShape(8.dp))
                         .testTag("deselect_all_apps_button")
                 ) {
-                    Text("Clear Shown", style = MaterialTheme.typography.labelMedium.copy(color = TextMuted))
+                    Text(stringResource(R.string.btn_clear_shown), style = MaterialTheme.typography.labelMedium.copy(color = TextMuted))
                 }
             }
         }
@@ -339,7 +341,7 @@ fun AppsScreen(
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        text = "No applications match your filter",
+                        text = stringResource(R.string.apps_empty),
                         style = MaterialTheme.typography.bodyLarge.copy(color = TextSecondary)
                     )
                 }
@@ -455,7 +457,7 @@ private fun AppItemRow(
                                 .padding(horizontal = 4.dp, vertical = 1.dp)
                         ) {
                             Text(
-                                text = "SYS",
+                                text = stringResource(R.string.badge_sys),
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     fontSize = 9.sp,
                                     color = TextSecondary
@@ -478,7 +480,7 @@ private fun AppItemRow(
             // Status indicator icon (replaces Checkbox to avoid duplicate focus node on Android TV)
             Icon(
                 imageVector = if (rule.isSelected) Icons.Filled.CheckCircle else Icons.Outlined.RadioButtonUnchecked,
-                contentDescription = if (rule.isSelected) "Selected" else "Not selected",
+                contentDescription = stringResource(if (rule.isSelected) R.string.cd_selected else R.string.cd_not_selected),
                 tint = if (rule.isSelected) CyanPrimary else TextMuted,
                 modifier = Modifier.size(26.dp)
             )

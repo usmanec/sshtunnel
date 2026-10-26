@@ -8,9 +8,11 @@ import com.jcraft.jsch.Session
 import com.jcraft.jsch.SocketFactory
 import com.jcraft.jsch.UIKeyboardInteractive
 import com.jcraft.jsch.UserInfo
-import top.rootu.ssh.tunnel.data.model.SshServerProfile
+import android.content.Context
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import top.rootu.ssh.tunnel.R
+import top.rootu.ssh.tunnel.data.model.SshServerProfile
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
@@ -25,6 +27,7 @@ import java.util.Properties
  * outside the VPN service.
  */
 class SshTunnelClient(
+    private val context: Context,
     private val protectSocket: ((Socket) -> Boolean)?,
     private val onLog: (String, Boolean) -> Unit = { _, _ -> }
 ) : TunnelTransport {
@@ -44,17 +47,17 @@ class SshTunnelClient(
                 msg.contains("USERAUTH fail", ignoreCase = true)
         }
 
-        fun describeError(e: Throwable, profile: SshServerProfile): String {
+        fun describeError(context: Context, e: Throwable, profile: SshServerProfile): String {
             val msg = e.message ?: e.javaClass.simpleName
             return when {
                 msg.contains("Auth fail", ignoreCase = true) || msg.contains("USERAUTH fail", ignoreCase = true) ->
-                    "Authentication failed: invalid username, password, or SSH key"
-                msg.contains("invalid privatekey", ignoreCase = true) -> "Invalid SSH private key format or wrong passphrase"
+                    context.getString(R.string.err_auth)
+                msg.contains("invalid privatekey", ignoreCase = true) -> context.getString(R.string.err_key)
                 msg.contains("timeout", ignoreCase = true) || msg.contains("timed out", ignoreCase = true) ->
-                    "Connection timed out to ${profile.host}:${profile.port}"
-                msg.contains("Connection refused", ignoreCase = true) -> "Connection refused on port ${profile.port}"
+                    context.getString(R.string.err_timeout, profile.host, profile.port)
+                msg.contains("Connection refused", ignoreCase = true) -> context.getString(R.string.err_refused, profile.port)
                 msg.contains("UnknownHost", ignoreCase = true) || e.cause is java.net.UnknownHostException ->
-                    "Unknown host: ${profile.host}"
+                    context.getString(R.string.err_unknown_host, profile.host)
                 else -> msg
             }
         }
@@ -88,7 +91,7 @@ class SshTunnelClient(
     /** Blocking connect. Must be called off the main thread. */
     fun connect(profile: SshServerProfile): Result<Unit> {
         return try {
-            onLog("Connecting to ${profile.username}@${profile.host}:${profile.port}...", false)
+            onLog(context.getString(R.string.log_ssh_connecting, "${profile.username}@${profile.host}:${profile.port}"), false)
             val newSession = createSession(profile, CONNECT_TIMEOUT_MS)
             if (profile.keepAliveIntervalSeconds > 0) {
                 // Three missed keepalives in a row mean the session is dead
@@ -102,11 +105,11 @@ class SshTunnelClient(
                 throw IOException("Cancelled")
             }
             session = newSession
-            onLog("SSH session established (${newSession.serverVersion ?: "server"})", false)
+            onLog(context.getString(R.string.log_ssh_established, newSession.serverVersion ?: "SSH"), false)
             Result.success(Unit)
         } catch (e: Exception) {
             session = null
-            if (!isClosed) onLog("SSH connection failed: ${describeError(e, profile)}", true)
+            if (!isClosed) onLog(context.getString(R.string.log_ssh_failed, describeError(context, e, profile)), true)
             Result.failure(e)
         } finally {
             pendingSession = null
@@ -172,7 +175,7 @@ class SshTunnelClient(
             testSession.connect(10_000)
             Result.success(System.currentTimeMillis() - startTime)
         } catch (e: Exception) {
-            Result.failure(Exception(describeError(e, profile), e))
+            Result.failure(Exception(describeError(context, e, profile), e))
         } finally {
             runCatching { testSession?.disconnect() }
         }
@@ -243,7 +246,7 @@ class SshTunnelClient(
         session = null
         try {
             if (current.isConnected) {
-                onLog("Disconnecting SSH session...", false)
+                onLog(context.getString(R.string.log_ssh_disconnecting), false)
                 current.disconnect()
             }
         } catch (e: Exception) {

@@ -72,6 +72,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
+import androidx.annotation.StringRes
+import top.rootu.ssh.tunnel.R
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -156,7 +159,7 @@ fun ServersScreen(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "SSH SERVERS (${servers.size})",
+                            text = stringResource(R.string.servers_header, servers.size),
                             style = MaterialTheme.typography.labelSmall.copy(
                                 color = TextMuted,
                                 letterSpacing = 0.5.sp
@@ -164,7 +167,7 @@ fun ServersScreen(
                         )
                         if (servers.isNotEmpty()) {
                             Text(
-                                text = "OK on a server makes it active (switches the running tunnel)",
+                                text = stringResource(R.string.servers_hint),
                                 style = MaterialTheme.typography.labelSmall.copy(color = TextSecondary)
                             )
                         }
@@ -183,7 +186,7 @@ fun ServersScreen(
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Add Server", fontWeight = FontWeight.SemiBold)
+                        Text(stringResource(R.string.btn_add_server), fontWeight = FontWeight.SemiBold)
                     }
                 }
                 Spacer(modifier = Modifier.height(10.dp))
@@ -204,11 +207,11 @@ fun ServersScreen(
                             )
                             Spacer(modifier = Modifier.height(12.dp))
                             Text(
-                                text = "No SSH servers added yet",
+                                text = stringResource(R.string.servers_empty),
                                 style = MaterialTheme.typography.titleMedium.copy(color = TextSecondary)
                             )
                             Text(
-                                text = "Press \"Add Server\" to add and verify your server",
+                                text = stringResource(R.string.servers_empty_hint),
                                 style = MaterialTheme.typography.bodyMedium.copy(color = TextMuted)
                             )
                         }
@@ -249,7 +252,7 @@ fun ServersScreen(
                         )
                         Spacer(modifier = Modifier.width(10.dp))
                         Text(
-                            text = "Delete SSH Server?",
+                            text = stringResource(R.string.delete_title),
                             style = MaterialTheme.typography.titleLarge.copy(
                                 fontWeight = FontWeight.Bold,
                                 color = TextPrimary
@@ -259,7 +262,7 @@ fun ServersScreen(
                 },
                 text = {
                     Text(
-                        text = "Are you sure you want to delete profile \"${target.name}\" (${target.username}@${target.host}:${target.port})? This action cannot be undone.",
+                        text = stringResource(R.string.delete_text, target.name, "${target.username}@${target.host}:${target.port}"),
                         style = MaterialTheme.typography.bodyMedium.copy(color = TextSecondary)
                     )
                 },
@@ -278,7 +281,7 @@ fun ServersScreen(
                             .tvFocusVisual(shape = RoundedCornerShape(8.dp))
                             .testTag("confirm_delete_server_button")
                     ) {
-                        Text("Delete", fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.btn_delete), fontWeight = FontWeight.Bold)
                     }
                 },
                 dismissButton = {
@@ -288,7 +291,7 @@ fun ServersScreen(
                             .tvFocusVisual(shape = RoundedCornerShape(8.dp))
                             .testTag("cancel_delete_server_button")
                     ) {
-                        Text("Cancel", style = MaterialTheme.typography.labelMedium.copy(color = TextMuted))
+                        Text(stringResource(R.string.btn_cancel), style = MaterialTheme.typography.labelMedium.copy(color = TextMuted))
                     }
                 },
                 containerColor = DarkSurface
@@ -353,7 +356,7 @@ private fun ServerItemCard(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = if (server.isActive) Icons.Default.RadioButtonChecked else Icons.Default.RadioButtonUnchecked,
-                        contentDescription = if (server.isActive) "Active server" else "Make active",
+                        contentDescription = stringResource(if (server.isActive) R.string.cd_active_server else R.string.cd_make_active),
                         tint = if (server.isActive) CyanPrimary else TextMuted,
                         modifier = Modifier.size(20.dp)
                     )
@@ -377,7 +380,7 @@ private fun ServerItemCard(
                                 .padding(horizontal = 6.dp, vertical = 2.dp)
                         ) {
                             Text(
-                                text = "ACTIVE",
+                                text = stringResource(R.string.badge_active),
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     fontWeight = FontWeight.Bold,
                                     color = CyanPrimary
@@ -413,7 +416,7 @@ private fun ServerItemCard(
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = authOption(server.authType).label,
+                            text = stringResource(authOption(server.authType).label),
                             style = MaterialTheme.typography.labelSmall.copy(color = TextSecondary)
                         )
                     }
@@ -433,7 +436,7 @@ private fun ServerItemCard(
                     }
                     if (server.lastPingMs != null) {
                         Text(
-                            text = "${server.lastPingMs} ms",
+                            text = stringResource(R.string.unit_ms, server.lastPingMs),
                             style = MaterialTheme.typography.labelSmall.copy(
                                 fontFamily = RobotoMonoFontFamily,
                                 color = if (server.lastPingMs < 150) EmeraldSuccess else AmberWarning,
@@ -461,7 +464,7 @@ private fun ServerItemCard(
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Edit", color = TextSecondary)
+                    Text(stringResource(R.string.btn_edit), color = TextSecondary)
                 }
                 TextButton(
                     onClick = onDelete,
@@ -476,7 +479,7 @@ private fun ServerItemCard(
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Delete", color = RedError.copy(alpha = 0.85f))
+                    Text(stringResource(R.string.btn_delete), color = RedError.copy(alpha = 0.85f))
                 }
             }
         }
@@ -513,8 +516,10 @@ private fun ServerEditDialog(
     var authType by remember { mutableStateOf(server.authType) }
     var password by remember { mutableStateOf(server.password) }
     var privateKey by remember { mutableStateOf(server.privateKey) }
+    val configuredKeyLabel = stringResource(R.string.key_configured)
+    val isTestFailed by viewModel.isTestFailed.collectAsState()
     var importedFileName by remember {
-        mutableStateOf(if (server.privateKey.isNotBlank()) "Configured Key" else "")
+        mutableStateOf(if (server.privateKey.isNotBlank()) configuredKeyLabel else "")
     }
     var showRawKeyField by remember { mutableStateOf(false) }
     var passphrase by remember { mutableStateOf(server.passphrase) }
@@ -532,9 +537,9 @@ private fun ServerEditDialog(
             if (result != null) {
                 importedFileName = result.first
                 privateKey = result.second
-                Toast.makeText(context, "SSH Key imported: ${result.first}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.toast_key_imported, result.first), Toast.LENGTH_SHORT).show()
             } else {
-                Toast.makeText(context, "Failed to read SSH key file", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, context.getString(R.string.toast_key_read_failed), Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -545,7 +550,7 @@ private fun ServerEditDialog(
         } catch (e: ActivityNotFoundException) {
             // Many Android TV devices ship without a document picker
             showRawKeyField = true
-            Toast.makeText(context, "No file picker on this device. Paste the key text instead.", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, context.getString(R.string.toast_no_file_picker), Toast.LENGTH_LONG).show()
         }
     }
 
@@ -591,7 +596,7 @@ private fun ServerEditDialog(
         }
     }
 
-    val testFailed = !isTesting && !isAlreadyVerified && testResult?.startsWith("Error") == true
+    val testFailed = !isTesting && !isAlreadyVerified && isTestFailed
 
     FullScreenEditor(
         onDismiss = onDismiss,
@@ -605,7 +610,7 @@ private fun ServerEditDialog(
                 )
                 Spacer(modifier = Modifier.width(10.dp))
                 Text(
-                    text = if (server.id == 0L) "Add & Verify SSH Server" else "Edit SSH Server",
+                    text = stringResource(if (server.id == 0L) R.string.editor_title_add else R.string.editor_title_edit),
                     style = MaterialTheme.typography.titleLarge.copy(
                         fontWeight = FontWeight.Bold,
                         color = TextPrimary
@@ -629,7 +634,7 @@ private fun ServerEditDialog(
                         .padding(10.dp)
                 ) {
                     Text(
-                        text = "Connection test is required before saving to ensure host, port, credentials, and key are 100% correct.",
+                        text = stringResource(R.string.editor_notice),
                         style = MaterialTheme.typography.labelSmall.copy(color = TextSecondary)
                     )
                 }
@@ -637,8 +642,8 @@ private fun ServerEditDialog(
                 TvTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = "Profile Name",
-                    placeholder = "e.g. Frankfurt VPS, Home Tunnel",
+                    label = stringResource(R.string.field_profile_name),
+                    placeholder = stringResource(R.string.hint_profile_name),
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                     modifier = Modifier
@@ -654,7 +659,7 @@ private fun ServerEditDialog(
                     TvTextField(
                         value = host,
                         onValueChange = { host = it },
-                        label = "Host / IP Address",
+                        label = stringResource(R.string.field_host),
                         placeholder = "ssh.example.com",
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Next),
@@ -665,7 +670,7 @@ private fun ServerEditDialog(
                     TvTextField(
                         value = portText,
                         onValueChange = { portText = it.filter { ch -> ch.isDigit() } },
-                        label = "Port",
+                        label = stringResource(R.string.field_port),
                         singleLine = true,
                         isError = !portValid,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
@@ -678,7 +683,7 @@ private fun ServerEditDialog(
                 TvTextField(
                     value = username,
                     onValueChange = { username = it },
-                    label = "SSH Username",
+                    label = stringResource(R.string.field_username),
                     placeholder = "root",
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
@@ -689,7 +694,7 @@ private fun ServerEditDialog(
 
                 // Authentication: one selector, then only the fields it needs (key first, then password)
                 Text(
-                    text = "Authentication",
+                    text = stringResource(R.string.auth_label),
                     style = MaterialTheme.typography.labelMedium.copy(color = TextSecondary)
                 )
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -697,7 +702,7 @@ private fun ServerEditDialog(
                         FilterChip(
                             selected = authType == option.type,
                             onClick = { authType = option.type },
-                            label = { Text(option.label) },
+                            label = { Text(stringResource(option.label)) },
                             leadingIcon = {
                                 Icon(option.icon, contentDescription = null, modifier = Modifier.size(16.dp))
                             },
@@ -728,7 +733,7 @@ private fun ServerEditDialog(
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        text = "Private Key File",
+                                        text = stringResource(R.string.key_file_title),
                                         style = MaterialTheme.typography.titleMedium.copy(
                                             fontWeight = FontWeight.SemiBold,
                                             color = TextPrimary
@@ -736,8 +741,8 @@ private fun ServerEditDialog(
                                     )
                                     Text(
                                         text = if (privateKey.isNotBlank())
-                                            (if (importedFileName.isNotBlank()) importedFileName else "Key loaded (${privateKey.length} chars)")
-                                        else "No key file selected",
+                                            (if (importedFileName.isNotBlank()) importedFileName else stringResource(R.string.key_loaded, privateKey.length))
+                                        else stringResource(R.string.key_none),
                                         style = MaterialTheme.typography.labelSmall.copy(
                                             fontFamily = RobotoMonoFontFamily,
                                             color = if (privateKey.isNotBlank()) EmeraldSuccess else TextMuted
@@ -756,11 +761,11 @@ private fun ServerEditDialog(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.FileOpen,
-                                        contentDescription = "Choose file",
+                                        contentDescription = null,
                                         modifier = Modifier.size(16.dp)
                                     )
                                     Spacer(modifier = Modifier.width(6.dp))
-                                    Text("Pick File", style = MaterialTheme.typography.labelMedium)
+                                    Text(stringResource(R.string.btn_pick_file), style = MaterialTheme.typography.labelMedium)
                                 }
                             }
 
@@ -783,7 +788,7 @@ private fun ServerEditDialog(
                                         )
                                         Spacer(modifier = Modifier.width(4.dp))
                                         Text(
-                                            text = if (showRawKeyField) "Hide raw key" else "View / edit raw key",
+                                            text = stringResource(if (showRawKeyField) R.string.btn_hide_key else R.string.btn_show_key),
                                             style = MaterialTheme.typography.labelSmall.copy(color = CyanPrimary)
                                         )
                                     }
@@ -802,7 +807,7 @@ private fun ServerEditDialog(
                                             modifier = Modifier.size(14.dp)
                                         )
                                         Spacer(modifier = Modifier.width(4.dp))
-                                        Text("Remove", style = MaterialTheme.typography.labelSmall.copy(color = RedError))
+                                        Text(stringResource(R.string.btn_remove), style = MaterialTheme.typography.labelSmall.copy(color = RedError))
                                     }
                                 }
                             }
@@ -812,7 +817,7 @@ private fun ServerEditDialog(
                                     TvTextField(
                                         value = privateKey,
                                         onValueChange = { privateKey = it },
-                                        label = "Private Key text (or paste directly)",
+                                        label = stringResource(R.string.field_key_text),
                                         placeholder = "-----BEGIN OPENSSH PRIVATE KEY-----...",
                                         maxLines = 6,
                                         modifier = Modifier
@@ -827,8 +832,8 @@ private fun ServerEditDialog(
                     TvTextField(
                         value = passphrase,
                         onValueChange = { passphrase = it },
-                        label = "Key Passphrase (only for an encrypted key)",
-                        placeholder = "Leave blank if the key is not encrypted",
+                        label = stringResource(R.string.field_passphrase),
+                        placeholder = stringResource(R.string.hint_passphrase),
                         singleLine = true,
                         visualTransformation = PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Next),
@@ -842,7 +847,7 @@ private fun ServerEditDialog(
                     TvTextField(
                         value = password,
                         onValueChange = { password = it },
-                        label = if (authType.usesKey) "Password (sent after the key)" else "Password",
+                        label = stringResource(if (authType.usesKey) R.string.field_password_after_key else R.string.field_password),
                         singleLine = true,
                         visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Next),
@@ -853,7 +858,7 @@ private fun ServerEditDialog(
                             ) {
                                 Icon(
                                     imageVector = if (showPassword) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                                    contentDescription = "Toggle password"
+                                    contentDescription = stringResource(R.string.cd_toggle_password)
                                 )
                             }
                         },
@@ -868,7 +873,7 @@ private fun ServerEditDialog(
                     TvTextField(
                         value = socksPortText,
                         onValueChange = { socksPortText = it.filter { ch -> ch.isDigit() } },
-                        label = "SOCKS5 Port (-D)",
+                        label = stringResource(R.string.field_socks_port),
                         singleLine = true,
                         isError = !socksPortValid,
                         supportingText = if (!socksPortValid) "1024–65535" else null,
@@ -880,7 +885,7 @@ private fun ServerEditDialog(
                     TvTextField(
                         value = keepAliveText,
                         onValueChange = { keepAliveText = it.filter { ch -> ch.isDigit() } },
-                        label = "KeepAlive (sec)",
+                        label = stringResource(R.string.field_keepalive),
                         singleLine = true,
                         isError = !keepAliveValid,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
@@ -891,8 +896,8 @@ private fun ServerEditDialog(
                 }
 
                 SettingSwitchRow(
-                    title = "Enable Compression (zlib)",
-                    description = "Helps on slow links with text traffic; useless for video and already compressed data",
+                    title = stringResource(R.string.compression_title),
+                    description = stringResource(R.string.compression_desc),
                     checked = compression,
                     onCheckedChange = { compression = it }
                 )
@@ -928,14 +933,14 @@ private fun ServerEditDialog(
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Column {
                                     Text(
-                                        text = if (isAlreadyVerified) "Connection Verified" else "Verification Required",
+                                        text = stringResource(if (isAlreadyVerified) R.string.verified_title else R.string.verify_required),
                                         style = MaterialTheme.typography.titleMedium.copy(
                                             fontWeight = FontWeight.Bold,
                                             color = if (isAlreadyVerified) EmeraldSuccess else TextPrimary
                                         )
                                     )
                                     Text(
-                                        text = if (isAlreadyVerified) "Ready to save" else "Test SSH connection before saving",
+                                        text = stringResource(if (isAlreadyVerified) R.string.ready_to_save else R.string.test_before_save),
                                         style = MaterialTheme.typography.labelSmall.copy(color = TextSecondary)
                                     )
                                 }
@@ -962,10 +967,10 @@ private fun ServerEditDialog(
                                         color = Color(0xFF001F28)
                                     )
                                     Spacer(modifier = Modifier.width(6.dp))
-                                    Text("Testing...", style = MaterialTheme.typography.labelMedium)
+                                    Text(stringResource(R.string.btn_testing), style = MaterialTheme.typography.labelMedium)
                                 } else {
                                     Text(
-                                        text = if (isAlreadyVerified) "Re-test" else "Test Connection",
+                                        text = stringResource(if (isAlreadyVerified) R.string.btn_retest else R.string.btn_test),
                                         style = MaterialTheme.typography.labelMedium
                                     )
                                 }
@@ -1002,10 +1007,10 @@ private fun ServerEditDialog(
                         context = context,
                         profile = currentProfile,
                         onSuccess = {
-                            Toast.makeText(context, "Server verified and saved successfully!", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, context.getString(R.string.toast_server_saved), Toast.LENGTH_SHORT).show()
                         },
                         onError = { error ->
-                            Toast.makeText(context, "Cannot save server: $error", Toast.LENGTH_LONG).show()
+                            Toast.makeText(context, context.getString(R.string.toast_cannot_save, error), Toast.LENGTH_LONG).show()
                         }
                     )
                 },
@@ -1026,7 +1031,7 @@ private fun ServerEditDialog(
                         color = Color(0xFF001F28)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("Verifying...")
+                    Text(stringResource(R.string.btn_verifying))
                 } else {
                     Icon(
                         imageVector = if (isAlreadyVerified) Icons.Default.Check else Icons.Default.NetworkPing,
@@ -1034,7 +1039,7 @@ private fun ServerEditDialog(
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text(if (isAlreadyVerified) "Save Server" else "Test & Save Server")
+                    Text(stringResource(if (isAlreadyVerified) R.string.btn_save_server else R.string.btn_test_and_save))
                 }
             }
         },
@@ -1048,7 +1053,7 @@ private fun ServerEditDialog(
                             .tvFocusVisual(shape = RoundedCornerShape(8.dp))
                             .testTag("save_unverified_server_button")
                     ) {
-                        Text("Save anyway", style = MaterialTheme.typography.labelMedium.copy(color = AmberWarning))
+                        Text(stringResource(R.string.btn_save_anyway), style = MaterialTheme.typography.labelMedium.copy(color = AmberWarning))
                     }
                 }
                 TextButton(
@@ -1057,7 +1062,7 @@ private fun ServerEditDialog(
                         .tvFocusVisual(shape = RoundedCornerShape(8.dp))
                         .testTag("cancel_edit_server_button")
                 ) {
-                    Text("Cancel", style = MaterialTheme.typography.labelMedium.copy(color = TextMuted))
+                    Text(stringResource(R.string.btn_cancel), style = MaterialTheme.typography.labelMedium.copy(color = TextMuted))
                 }
             }
         },
@@ -1109,12 +1114,12 @@ private fun FullScreenEditor(
     }
 }
 
-private class AuthOption(val type: AuthType, val label: String, val icon: ImageVector)
+private class AuthOption(val type: AuthType, @StringRes val label: Int, val icon: ImageVector)
 
 private val AUTH_OPTIONS = listOf(
-    AuthOption(AuthType.PASSWORD, "Password", Icons.Default.Password),
-    AuthOption(AuthType.PRIVATE_KEY, "Private key", Icons.Default.Key),
-    AuthOption(AuthType.PRIVATE_KEY_AND_PASSWORD, "Key + password", Icons.Default.VpnKey)
+    AuthOption(AuthType.PASSWORD, R.string.auth_password, Icons.Default.Password),
+    AuthOption(AuthType.PRIVATE_KEY, R.string.auth_key, Icons.Default.Key),
+    AuthOption(AuthType.PRIVATE_KEY_AND_PASSWORD, R.string.auth_key_password, Icons.Default.VpnKey)
 )
 
 private fun authOption(type: AuthType) = AUTH_OPTIONS.first { it.type == type }

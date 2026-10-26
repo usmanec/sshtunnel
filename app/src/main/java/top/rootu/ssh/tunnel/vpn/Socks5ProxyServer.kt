@@ -50,7 +50,6 @@ class Socks5ProxyServer(
         val pool = Executors.newCachedThreadPool(daemonThreadFactory())
         executor = pool
         pool.execute { acceptLoop(socket, pool) }
-        onLog("Local SOCKS5 proxy listening on 127.0.0.1:$port", false)
     }
 
     private fun acceptLoop(server: ServerSocket, pool: ExecutorService) {
@@ -62,7 +61,7 @@ class Socks5ProxyServer(
                 onActivity()
                 pool.execute { handleClient(client, pool) }
             } catch (e: Exception) {
-                if (!server.isClosed) onLog("SOCKS5 accept error: ${e.message}", true)
+                if (!server.isClosed) onLog("SOCKS5: ${e.message}", true)
             }
         }
     }
