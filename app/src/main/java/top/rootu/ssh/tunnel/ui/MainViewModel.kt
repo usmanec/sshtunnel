@@ -16,6 +16,16 @@ import top.rootu.ssh.tunnel.data.repository.VpnRepository
 import top.rootu.ssh.tunnel.vpn.SshTunnelClient
 import top.rootu.ssh.tunnel.vpn.SshVpnService
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import top.rootu.ssh.tunnel.update.UpdateInfo
+import top.rootu.ssh.tunnel.update.UpdateManager
+import java.io.File
+import top.rootu.ssh.tunnel.vpn.net.GeoIpInfo
+import top.rootu.ssh.tunnel.vpn.net.GeoIpLookup
+import top.rootu.ssh.tunnel.vpn.net.Socks5Client
+import java.net.InetSocketAddress
+import java.net.Socket
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -31,6 +41,8 @@ enum class AppFilterMode {
     SYSTEM_ONLY,
     SELECTED_ONLY
 }
+
+private const val EXTERNAL_IP_TTL_MS = 5 * 60_000L
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val app: Application = application
@@ -392,6 +404,152 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val ok = repository.setDnsServer(dns)
             if (ok && changed) markRoutingChanged()
             onResult(ok)
+        }
+    }
+
+    // External IP and location shown on Home
+
+    data class ExternalIpState(
+        val loading: Boolean = false,
+        val info: GeoIpInfo? = null,
+        val viaTunnel: Boolean = false,
+        val failed: Boolean = false
+    )
+
+    private val _externalIp = MutableStateFlow(ExternalIpState())
+    val externalIp: StateFlow<ExternalIpState> = _externalIp.asStateFlow()
+    private var externalIpJob: Job? = null
+    private var externalIpKey: String? = null
+    private var externalIpCheckedAt = 0L
+
+    /**
+     * Looks up the external IP. While the tunnel is up the request goes through the local SOCKS5
+     * proxy (our own app is excluded from the tunnel), so it shows the SSH server's exit address;
+     * otherwise the direct one. Results are reused for a few minutes unless [force] is set.
+     */
+    fun refreshExternalIp(force: Boolean = false) {
+        val status = vpnStatus.value
+        val connected = status == VpnStatus.CONNECTED || status == VpnStatus.IDLE_SUSPENDED
+        // While connecting or reconnecting the path is about to change: keep what is shown
+        if (!connected && status != VpnStatus.DISCONNECTED && status != VpnStatus.ERROR) return
+        val server = if (connected) SshVpnService.activeServer.value ?: return else null
+        val key = server?.let { "tunnel:${it.id}:${it.socksPort}" } ?: "direct"
+        val fresh = System.currentTimeMillis() - externalIpCheckedAt < EXTERNAL_IP_TTL_MS
+        if (!force && key == externalIpKey && fresh && _externalIp.value.info != null) return
+
+        val sameKey = key == externalIpKey
+        externalIpKey = key
+        externalIpJob?.cancel()
+        _externalIp.value = ExternalIpState(
+            loading = true,
+            info = if (sameKey) _externalIp.value.info else null,
+            viaTunnel = server != null
+        )
+        val connector: (String, Int) -> Socket = if (server != null) {
+            { host, port -> Socks5Client.connectHost(server.socksPort, host, port, 15_000) }
+        } else {
+            { host, port -> Socket().apply { connect(InetSocketAddress(host, port), 10_000) } }
+        }
+        val language = app.resources.configuration.locales[0].language
+        externalIpJob = viewModelScope.launch {
+            val result = withContext(Dispatchers.IO) {
+                runCatching { GeoIpLookup(connector, language).lookup() }
+            }
+            externalIpCheckedAt = if (result.isSuccess) System.currentTimeMillis() else 0L
+            _externalIp.value = ExternalIpState(
+                loading = false,
+                info = result.getOrNull(),
+                viaTunnel = server != null,
+                failed = result.isFailure
+            )
+        }
+    }
+
+    // In-app updates from GitHub releases (Settings → Updates)
+
+    sealed class UpdateState {
+        object Idle : UpdateState()
+        object Checking : UpdateState()
+        object UpToDate : UpdateState()
+        data class Available(val info: UpdateInfo) : UpdateState()
+        /** [progress] is 0..100, or -1 when the size is unknown. */
+        data class Downloading(val info: UpdateInfo, val progress: Int) : UpdateState()
+        data class ReadyToInstall(val info: UpdateInfo, val file: File) : UpdateState()
+        /** Android 8+: the user has to allow installing apps from this app first. */
+        data class NeedsInstallPermission(val info: UpdateInfo, val file: File) : UpdateState()
+        data class Failed(val error: UpdateError, val detail: String? = null) : UpdateState()
+    }
+
+    enum class UpdateError { CHECK_FAILED, DOWNLOAD_FAILED, NOT_THIS_APP, SIGNATURE_MISMATCH, NO_INSTALLER, NO_PERMISSION_SCREEN }
+
+    private val updateManager = UpdateManager(application)
+    private val _updateState = MutableStateFlow<UpdateState>(UpdateState.Idle)
+    val updateState: StateFlow<UpdateState> = _updateState.asStateFlow()
+    val currentVersion: String get() = updateManager.currentVersion
+    private var updateJob: Job? = null
+    private var autoCheckedForUpdate = false
+
+    /** Checks once per app session when Settings opens; the button checks again on demand. */
+    fun checkForUpdateOnce() {
+        if (autoCheckedForUpdate) return
+        autoCheckedForUpdate = true
+        checkForUpdate()
+    }
+
+    fun checkForUpdate() {
+        if (_updateState.value is UpdateState.Checking || _updateState.value is UpdateState.Downloading) return
+        updateJob?.cancel()
+        _updateState.value = UpdateState.Checking
+        updateJob = viewModelScope.launch {
+            _updateState.value = try {
+                updateManager.checkForUpdate()?.let { UpdateState.Available(it) } ?: UpdateState.UpToDate
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                UpdateState.Failed(UpdateError.CHECK_FAILED, e.message)
+            }
+        }
+    }
+
+    fun downloadAndInstallUpdate(info: UpdateInfo) {
+        updateJob?.cancel()
+        _updateState.value = UpdateState.Downloading(info, 0)
+        updateJob = viewModelScope.launch {
+            try {
+                val file = updateManager.download(info) { progress ->
+                    _updateState.value = UpdateState.Downloading(info, progress)
+                }
+                _updateState.value = UpdateState.ReadyToInstall(info, file)
+                installUpdate()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: UpdateManager.InvalidApkException) {
+                _updateState.value = UpdateState.Failed(
+                    if (e.problem == UpdateManager.Problem.SIGNATURE_MISMATCH) UpdateError.SIGNATURE_MISMATCH else UpdateError.NOT_THIS_APP
+                )
+            } catch (e: Exception) {
+                _updateState.value = UpdateState.Failed(UpdateError.DOWNLOAD_FAILED, e.message)
+            }
+        }
+    }
+
+    /** Installs the downloaded APK, asking for the "install unknown apps" permission first if needed. */
+    fun installUpdate() {
+        val (info, file) = when (val state = _updateState.value) {
+            is UpdateState.ReadyToInstall -> state.info to state.file
+            is UpdateState.NeedsInstallPermission -> state.info to state.file
+            else -> return
+        }
+        if (!updateManager.canInstall()) {
+            _updateState.value = UpdateState.NeedsInstallPermission(info, file)
+            if (!updateManager.openInstallPermissionSettings()) {
+                _updateState.value = UpdateState.Failed(UpdateError.NO_PERMISSION_SCREEN)
+            }
+            return
+        }
+        _updateState.value = UpdateState.ReadyToInstall(info, file)
+        if (!updateManager.install(file)) {
+            _updateState.value = UpdateState.Failed(UpdateError.NO_INSTALLER)
         }
     }
 

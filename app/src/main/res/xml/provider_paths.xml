@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- UpdateManager: Android/data/<pkg>/files/Download/update.apk, or cache/updates when external storage is missing -->
+    <external-files-path name="downloads" path="Download/" />
+    <cache-path name="updates" path="updates/" />
+</paths>

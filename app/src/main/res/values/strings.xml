@@ -65,6 +65,15 @@
     <string name="no_apps_hint">No apps selected. Choose the apps to route through SSH.</string>
     <string name="btn_select_apps">Select Apps</string>
 
+    <!-- External IP -->
+    <string name="ext_ip_title">EXTERNAL IP</string>
+    <string name="ext_ip_via_tunnel">via tunnel</string>
+    <string name="ext_ip_direct">direct</string>
+    <string name="ext_ip_loading">Detecting…</string>
+    <string name="ext_ip_failed">Could not detect the external IP</string>
+    <string name="ext_ip_unknown_location">Location unknown</string>
+    <string name="cd_refresh_ip">Refresh external IP</string>
+
     <!-- Servers -->
     <string name="servers_header">SSH SERVERS (%1$d)</string>
     <string name="servers_hint">OK on a server makes it active (switches the running tunnel)</string>
@@ -289,4 +298,25 @@
     <string name="err_timeout">Connection to %1$s:%2$d timed out</string>
     <string name="err_refused">Connection refused on port %1$d</string>
     <string name="err_unknown_host">Unknown host: %1$s</string>
+    <!-- Updates -->
+    <string name="section_updates">Updates</string>
+    <string name="update_current_version">Installed version: %1$s</string>
+    <string name="update_checking">Checking for updates…</string>
+    <string name="update_up_to_date">You have the latest version.</string>
+    <string name="update_available">New version %1$s is available (%2$s).</string>
+    <string name="update_downloading">Downloading %1$s…</string>
+    <string name="update_ready">Version %1$s is downloaded and verified.</string>
+    <string name="update_needs_permission">Allow installing apps from SSH Tunnel in the screen that opened, then press Install.</string>
+    <string name="update_changes">What\'s new</string>
+    <string name="update_error_check">Could not check for updates.</string>
+    <string name="update_error_download">Could not download the update.</string>
+    <string name="update_error_not_this_app">The downloaded file is not an update for this app.</string>
+    <string name="update_error_signature">The update is signed with a different key and cannot replace the installed app.</string>
+    <string name="update_error_no_installer">No app found to install the update.</string>
+    <string name="update_error_no_permission_screen">This device has no screen to allow installing apps. Allow it via ADB or the device settings.</string>
+    <string name="btn_update_check">Check for updates</string>
+    <string name="btn_update_install">Download and install</string>
+    <string name="btn_update_install_now">Install</string>
+    <string name="size_mb">%1$.1f MB</string>
+    <string name="size_kb">%1$d KB</string>
 </resources>

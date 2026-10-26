@@ -186,7 +186,7 @@ fun ServersScreen(
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text(stringResource(R.string.btn_add_server), fontWeight = FontWeight.SemiBold)
+                        Text(stringResource(R.string.btn_add_server), fontWeight = FontWeight.SemiBold, maxLines = 1)
                     }
                 }
                 Spacer(modifier = Modifier.height(10.dp))
@@ -291,7 +291,7 @@ fun ServersScreen(
                             .tvFocusVisual(shape = RoundedCornerShape(8.dp))
                             .testTag("cancel_delete_server_button")
                     ) {
-                        Text(stringResource(R.string.btn_cancel), style = MaterialTheme.typography.labelMedium.copy(color = TextMuted))
+                        Text(stringResource(R.string.btn_cancel), maxLines = 1, style = MaterialTheme.typography.labelMedium.copy(color = TextMuted))
                     }
                 },
                 containerColor = DarkSurface
@@ -464,7 +464,7 @@ private fun ServerItemCard(
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text(stringResource(R.string.btn_edit), color = TextSecondary)
+                    Text(stringResource(R.string.btn_edit), color = TextSecondary, maxLines = 1)
                 }
                 TextButton(
                     onClick = onDelete,
@@ -479,7 +479,7 @@ private fun ServerItemCard(
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text(stringResource(R.string.btn_delete), color = RedError.copy(alpha = 0.85f))
+                    Text(stringResource(R.string.btn_delete), color = RedError.copy(alpha = 0.85f), maxLines = 1)
                 }
             }
         }
@@ -765,16 +765,15 @@ private fun ServerEditDialog(
                                         modifier = Modifier.size(16.dp)
                                     )
                                     Spacer(modifier = Modifier.width(6.dp))
-                                    Text(stringResource(R.string.btn_pick_file), style = MaterialTheme.typography.labelMedium)
+                                    Text(stringResource(R.string.btn_pick_file), maxLines = 1, style = MaterialTheme.typography.labelMedium)
                                 }
                             }
 
                             if (privateKey.isNotBlank()) {
                                 Spacer(modifier = Modifier.height(8.dp))
-                                Row(
+                                FlowRow(
                                     modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
+                                    horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
                                     TextButton(
                                         onClick = { showRawKeyField = !showRawKeyField },
@@ -915,14 +914,17 @@ private fun ServerEditDialog(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
-                        Row(
+                        // The button moves to its own line when the status text does not fit next to it
+                        FlowRow(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier
+                                    .align(Alignment.CenterVertically)
+                                    .padding(end = 8.dp)
                             ) {
                                 Icon(
                                     imageVector = if (isAlreadyVerified) Icons.Default.CheckCircle else Icons.Default.NetworkPing,
@@ -967,11 +969,12 @@ private fun ServerEditDialog(
                                         color = Color(0xFF001F28)
                                     )
                                     Spacer(modifier = Modifier.width(6.dp))
-                                    Text(stringResource(R.string.btn_testing), style = MaterialTheme.typography.labelMedium)
+                                    Text(stringResource(R.string.btn_testing), style = MaterialTheme.typography.labelMedium, maxLines = 1)
                                 } else {
                                     Text(
                                         text = stringResource(if (isAlreadyVerified) R.string.btn_retest else R.string.btn_test),
-                                        style = MaterialTheme.typography.labelMedium
+                                        style = MaterialTheme.typography.labelMedium,
+                                        maxLines = 1
                                     )
                                 }
                             }
@@ -1031,7 +1034,7 @@ private fun ServerEditDialog(
                         color = Color(0xFF001F28)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text(stringResource(R.string.btn_verifying))
+                    Text(stringResource(R.string.btn_verifying), maxLines = 1)
                 } else {
                     Icon(
                         imageVector = if (isAlreadyVerified) Icons.Default.Check else Icons.Default.NetworkPing,
@@ -1039,7 +1042,7 @@ private fun ServerEditDialog(
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text(stringResource(if (isAlreadyVerified) R.string.btn_save_server else R.string.btn_test_and_save))
+                    Text(stringResource(if (isAlreadyVerified) R.string.btn_save_server else R.string.btn_test_and_save), maxLines = 1)
                 }
             }
         },
@@ -1053,7 +1056,7 @@ private fun ServerEditDialog(
                             .tvFocusVisual(shape = RoundedCornerShape(8.dp))
                             .testTag("save_unverified_server_button")
                     ) {
-                        Text(stringResource(R.string.btn_save_anyway), style = MaterialTheme.typography.labelMedium.copy(color = AmberWarning))
+                        Text(stringResource(R.string.btn_save_anyway), maxLines = 1, style = MaterialTheme.typography.labelMedium.copy(color = AmberWarning))
                     }
                 }
                 TextButton(
@@ -1062,7 +1065,7 @@ private fun ServerEditDialog(
                         .tvFocusVisual(shape = RoundedCornerShape(8.dp))
                         .testTag("cancel_edit_server_button")
                 ) {
-                    Text(stringResource(R.string.btn_cancel), style = MaterialTheme.typography.labelMedium.copy(color = TextMuted))
+                    Text(stringResource(R.string.btn_cancel), maxLines = 1, style = MaterialTheme.typography.labelMedium.copy(color = TextMuted))
                 }
             }
         },
@@ -1074,6 +1077,7 @@ private fun ServerEditDialog(
  * and re-centered whenever the keyboard or content changes, which makes the form jump.
  * Back closes it like the Cancel button.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun FullScreenEditor(
     onDismiss: () -> Unit,
@@ -1102,13 +1106,13 @@ private fun FullScreenEditor(
             text()
         }
         Spacer(modifier = Modifier.height(12.dp))
-        Row(
+        // Wraps to two lines on narrow screens instead of squeezing the button labels
+        FlowRow(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End,
-            verticalAlignment = Alignment.CenterVertically
+            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             dismissButton()
-            Spacer(modifier = Modifier.width(8.dp))
             confirmButton()
         }
     }

@@ -20,3 +20,6 @@ debug.keystore
 
 # Sandbox compile/test harness output
 tools/sandbox-check/*/build/
+
+# Release keystore checked out by the release workflow
+app/keystore/

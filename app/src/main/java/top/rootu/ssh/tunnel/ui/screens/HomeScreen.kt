@@ -30,6 +30,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material3.IconButton
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.BatteryChargingFull
@@ -103,6 +106,12 @@ fun HomeScreen(
     val selectedAppCount by viewModel.selectedAppCount.collectAsState()
     val smartBatterySaver by viewModel.smartBatterySaver.collectAsState()
     val logs by viewModel.logs.collectAsState()
+    val externalIp by viewModel.externalIp.collectAsState()
+
+    // Re-check when the path changes: direct <-> tunnel, or another server
+    androidx.compose.runtime.LaunchedEffect(vpnStatus) {
+        viewModel.refreshExternalIp()
+    }
 
     val vpnPrepareLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
@@ -271,8 +280,12 @@ fun HomeScreen(
                         style = MaterialTheme.typography.labelLarge.copy(
                             fontWeight = FontWeight.Bold,
                             color = buttonColor,
-                            letterSpacing = 1.sp
-                        )
+                            letterSpacing = 0.5.sp
+                        ),
+                        // Long translations ("ДОБАВИТЬ СЕРВЕР") wrap inside the circle instead of being cut
+                        textAlign = TextAlign.Center,
+                        maxLines = 2,
+                        modifier = Modifier.padding(horizontal = 14.dp)
                     )
                 }
             }
@@ -283,6 +296,12 @@ fun HomeScreen(
             server = activeServer,
             pingMs = vpnStats.pingMs,
             onSwitchServer = onNavigateToServers
+        )
+
+        // External IP and location (exit address of the tunnel while connected)
+        ExternalIpCard(
+            state = externalIp,
+            onRefresh = { viewModel.refreshExternalIp(force = true) }
         )
 
         // Real-Time Telemetry Grid
@@ -461,7 +480,7 @@ private fun ActiveServerCard(
                     modifier = Modifier.size(16.dp)
                 )
                 Spacer(modifier = Modifier.width(4.dp))
-                Text(stringResource(if (server == null) R.string.btn_add else R.string.btn_switch), style = MaterialTheme.typography.labelLarge)
+                Text(stringResource(if (server == null) R.string.btn_add else R.string.btn_switch), style = MaterialTheme.typography.labelLarge, maxLines = 1)
             }
         }
     }
@@ -640,7 +659,7 @@ private fun SplitTunnelingCard(
                         .tvFocusVisual(shape = RoundedCornerShape(10.dp))
                         .testTag("manage_apps_button")
                 ) {
-                    Text(stringResource(R.string.btn_select_apps), style = MaterialTheme.typography.labelLarge)
+                    Text(stringResource(R.string.btn_select_apps), style = MaterialTheme.typography.labelLarge, maxLines = 1)
                 }
             }
         }
@@ -655,5 +674,106 @@ private fun formatDuration(seconds: Long): String {
         String.format("%02d:%02d:%02d", h, m, s)
     } else {
         String.format("%02d:%02d", m, s)
+    }
+}
+
+@Composable
+private fun ExternalIpCard(
+    state: top.rootu.ssh.tunnel.ui.MainViewModel.ExternalIpState,
+    onRefresh: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = DarkSurface),
+        shape = RoundedCornerShape(16.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, DarkSurfaceBorder)
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .clip(CircleShape)
+                    .background((if (state.viaTunnel) EmeraldSuccess else AmberWarning).copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Public,
+                    contentDescription = null,
+                    tint = if (state.viaTunnel) EmeraldSuccess else AmberWarning,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = stringResource(R.string.ext_ip_title),
+                        style = MaterialTheme.typography.labelSmall.copy(color = TextMuted, letterSpacing = 0.5.sp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = stringResource(if (state.viaTunnel) R.string.ext_ip_via_tunnel else R.string.ext_ip_direct),
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            color = if (state.viaTunnel) EmeraldSuccess else AmberWarning,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    )
+                }
+                val info = state.info
+                when {
+                    info != null -> {
+                        Text(
+                            text = info.ip,
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontFamily = RobotoMonoFontFamily,
+                                fontWeight = FontWeight.Bold,
+                                color = TextPrimary
+                            )
+                        )
+                        val place = listOfNotNull(info.city, info.country).joinToString(", ")
+                        Text(
+                            text = place.ifEmpty { stringResource(R.string.ext_ip_unknown_location) } +
+                                (info.countryCode?.let { " ($it)" } ?: ""),
+                            style = MaterialTheme.typography.bodyMedium.copy(color = TextSecondary)
+                        )
+                    }
+                    state.loading -> Text(
+                        text = stringResource(R.string.ext_ip_loading),
+                        style = MaterialTheme.typography.bodyMedium.copy(color = TextSecondary)
+                    )
+                    state.failed -> Text(
+                        text = stringResource(R.string.ext_ip_failed),
+                        style = MaterialTheme.typography.bodyMedium.copy(color = RedError)
+                    )
+                }
+            }
+            if (state.loading) {
+                CircularProgressIndicator(
+                    color = CyanPrimary,
+                    strokeWidth = 2.dp,
+                    modifier = Modifier
+                        .padding(12.dp)
+                        .size(24.dp)
+                )
+            } else {
+                IconButton(
+                    onClick = onRefresh,
+                    modifier = Modifier
+                        .tvFocusVisual(shape = CircleShape)
+                        .testTag("refresh_external_ip_button")
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Refresh,
+                        contentDescription = stringResource(R.string.cd_refresh_ip),
+                        tint = CyanPrimary
+                    )
+                }
+            }
+        }
     }
 }
