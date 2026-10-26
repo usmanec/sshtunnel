@@ -18,6 +18,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -90,6 +92,7 @@ import top.rootu.ssh.tunnel.ui.theme.TextSecondary
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun AppsScreen(
     viewModel: MainViewModel,
@@ -118,251 +121,248 @@ fun AppsScreen(
         }
     }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(horizontal = 16.dp, vertical = 12.dp)
+    // One scrolling list: the header scrolls away instead of squeezing the app list off screen
+    // (long translated labels made the header taller than a TV screen)
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        ReconnectBanner(viewModel, modifier = Modifier.padding(bottom = 10.dp))
-
-        // Routing Policy Tabs
-        Card(
-            colors = CardDefaults.cardColors(containerColor = DarkSurface),
-            shape = RoundedCornerShape(12.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(modifier = Modifier.padding(12.dp)) {
-                Text(
-                    text = stringResource(R.string.routing_policy),
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        color = TextMuted,
-                        letterSpacing = 0.5.sp
-                    )
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-
-                TabRow(
-                    selectedTabIndex = if (routingPolicy == RoutingPolicy.ROUTE_ONLY_SELECTED) 0 else 1,
-                    containerColor = DarkSurfaceVariant,
-                    contentColor = CyanPrimary,
-                    indicator = { tabPositions ->
-                        val index = if (routingPolicy == RoutingPolicy.ROUTE_ONLY_SELECTED) 0 else 1
-                        TabRowDefaults.SecondaryIndicator(
-                            modifier = Modifier.tabIndicatorOffset(tabPositions[index]),
-                            color = CyanPrimary
+        item { ReconnectBanner(viewModel) }
+        item {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = DarkSurface),
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Text(
+                        text = stringResource(R.string.routing_policy),
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            color = TextMuted,
+                            letterSpacing = 0.5.sp
                         )
-                    },
-                    modifier = Modifier.clip(RoundedCornerShape(8.dp))
-                ) {
-                    Tab(
-                        selected = routingPolicy == RoutingPolicy.ROUTE_ONLY_SELECTED,
-                        onClick = { viewModel.setRoutingPolicy(RoutingPolicy.ROUTE_ONLY_SELECTED) },
-                        modifier = Modifier
-                            .focusRequester(tabFocusRequester)
-                            .tvFocusVisual(shape = RoundedCornerShape(8.dp)),
-                        text = {
-                            Text(
-                                stringResource(R.string.policy_only_selected),
-                                style = MaterialTheme.typography.labelMedium.copy(
-                                    fontWeight = if (routingPolicy == RoutingPolicy.ROUTE_ONLY_SELECTED) FontWeight.Bold else FontWeight.Normal
-                                )
-                            )
-                        }
                     )
-                    Tab(
-                        selected = routingPolicy == RoutingPolicy.ROUTE_ALL_EXCEPT,
-                        onClick = { viewModel.setRoutingPolicy(RoutingPolicy.ROUTE_ALL_EXCEPT) },
-                        modifier = Modifier.tvFocusVisual(shape = RoundedCornerShape(8.dp)),
-                        text = {
-                            Text(
-                                stringResource(R.string.policy_all_except),
-                                style = MaterialTheme.typography.labelMedium.copy(
-                                    fontWeight = if (routingPolicy == RoutingPolicy.ROUTE_ALL_EXCEPT) FontWeight.Bold else FontWeight.Normal
-                                )
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    TabRow(
+                        selectedTabIndex = if (routingPolicy == RoutingPolicy.ROUTE_ONLY_SELECTED) 0 else 1,
+                        containerColor = DarkSurfaceVariant,
+                        contentColor = CyanPrimary,
+                        indicator = { tabPositions ->
+                            val index = if (routingPolicy == RoutingPolicy.ROUTE_ONLY_SELECTED) 0 else 1
+                            TabRowDefaults.SecondaryIndicator(
+                                modifier = Modifier.tabIndicatorOffset(tabPositions[index]),
+                                color = CyanPrimary
                             )
-                        }
+                        },
+                        modifier = Modifier.clip(RoundedCornerShape(8.dp))
+                    ) {
+                        Tab(
+                            selected = routingPolicy == RoutingPolicy.ROUTE_ONLY_SELECTED,
+                            onClick = { viewModel.setRoutingPolicy(RoutingPolicy.ROUTE_ONLY_SELECTED) },
+                            modifier = Modifier
+                                .focusRequester(tabFocusRequester)
+                                .tvFocusVisual(shape = RoundedCornerShape(8.dp)),
+                            text = {
+                                Text(
+                                    stringResource(R.string.policy_only_selected),
+                                    style = MaterialTheme.typography.labelMedium.copy(
+                                        fontWeight = if (routingPolicy == RoutingPolicy.ROUTE_ONLY_SELECTED) FontWeight.Bold else FontWeight.Normal
+                                    )
+                                )
+                            }
+                        )
+                        Tab(
+                            selected = routingPolicy == RoutingPolicy.ROUTE_ALL_EXCEPT,
+                            onClick = { viewModel.setRoutingPolicy(RoutingPolicy.ROUTE_ALL_EXCEPT) },
+                            modifier = Modifier.tvFocusVisual(shape = RoundedCornerShape(8.dp)),
+                            text = {
+                                Text(
+                                    stringResource(R.string.policy_all_except),
+                                    style = MaterialTheme.typography.labelMedium.copy(
+                                        fontWeight = if (routingPolicy == RoutingPolicy.ROUTE_ALL_EXCEPT) FontWeight.Bold else FontWeight.Normal
+                                    )
+                                )
+                            }
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = if (routingPolicy == RoutingPolicy.ROUTE_ONLY_SELECTED)
+                            stringResource(R.string.policy_only_selected_desc)
+                        else
+                            stringResource(R.string.policy_all_except_desc),
+                        style = MaterialTheme.typography.bodyMedium.copy(color = TextSecondary)
                     )
                 }
-
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = if (routingPolicy == RoutingPolicy.ROUTE_ONLY_SELECTED)
-                        stringResource(R.string.policy_only_selected_desc)
-                    else
-                        stringResource(R.string.policy_all_except_desc),
-                    style = MaterialTheme.typography.bodyMedium.copy(color = TextSecondary)
+            }
+        }
+        item {
+            TvTextField(
+                value = searchQuery,
+                onValueChange = { viewModel.appSearchQuery.value = it },
+                placeholder = stringResource(R.string.search_apps_hint),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                keyboardActions = KeyboardActions(onSearch = { focusManager.moveFocus(FocusDirection.Down) }),
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = stringResource(R.string.cd_search),
+                        tint = CyanPrimary
+                    )
+                },
+                trailingIcon = {
+                    if (searchQuery.isNotEmpty()) {
+                        IconButton(
+                            onClick = { viewModel.appSearchQuery.value = "" },
+                            modifier = Modifier.tvFocusVisual(shape = CircleShape)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Clear,
+                                contentDescription = stringResource(R.string.cd_clear_search),
+                                tint = TextMuted
+                            )
+                        }
+                    }
+                },
+                singleLine = true,
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = DarkSurface,
+                    unfocusedContainerColor = DarkSurface,
+                    focusedBorderColor = CyanPrimary,
+                    unfocusedBorderColor = DarkSurfaceBorder,
+                    focusedTextColor = TextPrimary,
+                    unfocusedTextColor = TextPrimary
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .tvFocusVisual(shape = RoundedCornerShape(12.dp))
+                    .testTag("app_search_input")
+            )
+        }
+        item {
+            // Filter Chips Row
+            // Wraps to a second line when the labels are long (e.g. in Russian)
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                FilterChip(
+                    selected = filterMode == AppFilterMode.USER_ONLY,
+                    onClick = { viewModel.appFilterMode.value = AppFilterMode.USER_ONLY },
+                    label = { Text(stringResource(R.string.filter_user)) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = CyanPrimary.copy(alpha = 0.2f),
+                        selectedLabelColor = CyanPrimary
+                    ),
+                    modifier = Modifier.tvFocusVisual(shape = RoundedCornerShape(8.dp))
+                )
+                FilterChip(
+                    selected = filterMode == AppFilterMode.SELECTED_ONLY,
+                    onClick = { viewModel.appFilterMode.value = AppFilterMode.SELECTED_ONLY },
+                    label = { Text(stringResource(R.string.filter_selected, selectedCount)) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = CyanPrimary.copy(alpha = 0.2f),
+                        selectedLabelColor = CyanPrimary
+                    ),
+                    modifier = Modifier.tvFocusVisual(shape = RoundedCornerShape(8.dp))
+                )
+                FilterChip(
+                    selected = filterMode == AppFilterMode.ALL,
+                    onClick = { viewModel.appFilterMode.value = AppFilterMode.ALL },
+                    label = { Text(stringResource(R.string.filter_all)) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = CyanPrimary.copy(alpha = 0.2f),
+                        selectedLabelColor = CyanPrimary
+                    ),
+                    modifier = Modifier.tvFocusVisual(shape = RoundedCornerShape(8.dp))
+                )
+                FilterChip(
+                    selected = filterMode == AppFilterMode.SYSTEM_ONLY,
+                    onClick = { viewModel.appFilterMode.value = AppFilterMode.SYSTEM_ONLY },
+                    label = { Text(stringResource(R.string.filter_system)) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = CyanPrimary.copy(alpha = 0.2f),
+                        selectedLabelColor = CyanPrimary
+                    ),
+                    modifier = Modifier.tvFocusVisual(shape = RoundedCornerShape(8.dp))
                 )
             }
         }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Search Field
-        TvTextField(
-            value = searchQuery,
-            onValueChange = { viewModel.appSearchQuery.value = it },
-            placeholder = stringResource(R.string.search_apps_hint),
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-            keyboardActions = KeyboardActions(onSearch = { focusManager.moveFocus(FocusDirection.Down) }),
-            leadingIcon = {
-                Icon(
-                    imageVector = Icons.Default.Search,
-                    contentDescription = stringResource(R.string.cd_search),
-                    tint = CyanPrimary
+        item {
+            // Selection Action Bar
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = stringResource(R.string.apps_shown, filteredApps.size, selectedCount),
+                    style = MaterialTheme.typography.labelSmall.copy(color = TextSecondary),
+                    modifier = Modifier
+                        .align(Alignment.CenterVertically)
+                        .padding(end = 8.dp)
                 )
-            },
-            trailingIcon = {
-                if (searchQuery.isNotEmpty()) {
-                    IconButton(
-                        onClick = { viewModel.appSearchQuery.value = "" },
-                        modifier = Modifier.tvFocusVisual(shape = CircleShape)
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    TextButton(
+                        onClick = { viewModel.selectShownApps(true) },
+                        enabled = filteredApps.isNotEmpty(),
+                        modifier = Modifier
+                            .tvFocusVisual(shape = RoundedCornerShape(8.dp))
+                            .testTag("select_all_apps_button")
                     ) {
+                        Text(stringResource(R.string.btn_select_shown), maxLines = 1, style = MaterialTheme.typography.labelMedium.copy(color = CyanPrimary))
+                    }
+                    TextButton(
+                        onClick = { viewModel.selectShownApps(false) },
+                        enabled = filteredApps.isNotEmpty(),
+                        modifier = Modifier
+                            .tvFocusVisual(shape = RoundedCornerShape(8.dp))
+                            .testTag("deselect_all_apps_button")
+                    ) {
+                        Text(stringResource(R.string.btn_clear_shown), maxLines = 1, style = MaterialTheme.typography.labelMedium.copy(color = TextMuted))
+                    }
+                }
+            }
+        }
+
+        if (filteredApps.isEmpty()) {
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(
-                            imageVector = Icons.Default.Clear,
-                            contentDescription = stringResource(R.string.cd_clear_search),
-                            tint = TextMuted
+                            imageVector = Icons.Default.Apps,
+                            contentDescription = null,
+                            tint = TextMuted,
+                            modifier = Modifier.size(48.dp)
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = stringResource(R.string.apps_empty),
+                            style = MaterialTheme.typography.bodyLarge.copy(color = TextSecondary)
                         )
                     }
                 }
-            },
-            singleLine = true,
-            shape = RoundedCornerShape(12.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = DarkSurface,
-                unfocusedContainerColor = DarkSurface,
-                focusedBorderColor = CyanPrimary,
-                unfocusedBorderColor = DarkSurfaceBorder,
-                focusedTextColor = TextPrimary,
-                unfocusedTextColor = TextPrimary
-            ),
-            modifier = Modifier
-                .fillMaxWidth()
-                .tvFocusVisual(shape = RoundedCornerShape(12.dp))
-                .testTag("app_search_input")
-        )
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        // Filter Chips Row
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            FilterChip(
-                selected = filterMode == AppFilterMode.USER_ONLY,
-                onClick = { viewModel.appFilterMode.value = AppFilterMode.USER_ONLY },
-                label = { Text(stringResource(R.string.filter_user)) },
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = CyanPrimary.copy(alpha = 0.2f),
-                    selectedLabelColor = CyanPrimary
-                ),
-                modifier = Modifier.tvFocusVisual(shape = RoundedCornerShape(8.dp))
-            )
-            FilterChip(
-                selected = filterMode == AppFilterMode.SELECTED_ONLY,
-                onClick = { viewModel.appFilterMode.value = AppFilterMode.SELECTED_ONLY },
-                label = { Text(stringResource(R.string.filter_selected, selectedCount)) },
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = CyanPrimary.copy(alpha = 0.2f),
-                    selectedLabelColor = CyanPrimary
-                ),
-                modifier = Modifier.tvFocusVisual(shape = RoundedCornerShape(8.dp))
-            )
-            FilterChip(
-                selected = filterMode == AppFilterMode.ALL,
-                onClick = { viewModel.appFilterMode.value = AppFilterMode.ALL },
-                label = { Text(stringResource(R.string.filter_all)) },
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = CyanPrimary.copy(alpha = 0.2f),
-                    selectedLabelColor = CyanPrimary
-                ),
-                modifier = Modifier.tvFocusVisual(shape = RoundedCornerShape(8.dp))
-            )
-            FilterChip(
-                selected = filterMode == AppFilterMode.SYSTEM_ONLY,
-                onClick = { viewModel.appFilterMode.value = AppFilterMode.SYSTEM_ONLY },
-                label = { Text(stringResource(R.string.filter_system)) },
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = CyanPrimary.copy(alpha = 0.2f),
-                    selectedLabelColor = CyanPrimary
-                ),
-                modifier = Modifier.tvFocusVisual(shape = RoundedCornerShape(8.dp))
-            )
-        }
-
-        // Selection Action Bar
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 4.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = stringResource(R.string.apps_shown, filteredApps.size, selectedCount),
-                style = MaterialTheme.typography.labelSmall.copy(color = TextSecondary)
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                TextButton(
-                    onClick = { viewModel.selectShownApps(true) },
-                    enabled = filteredApps.isNotEmpty(),
-                    modifier = Modifier
-                        .tvFocusVisual(shape = RoundedCornerShape(8.dp))
-                        .testTag("select_all_apps_button")
-                ) {
-                    Text(stringResource(R.string.btn_select_shown), style = MaterialTheme.typography.labelMedium.copy(color = CyanPrimary))
-                }
-                TextButton(
-                    onClick = { viewModel.selectShownApps(false) },
-                    enabled = filteredApps.isNotEmpty(),
-                    modifier = Modifier
-                        .tvFocusVisual(shape = RoundedCornerShape(8.dp))
-                        .testTag("deselect_all_apps_button")
-                ) {
-                    Text(stringResource(R.string.btn_clear_shown), style = MaterialTheme.typography.labelMedium.copy(color = TextMuted))
-                }
-            }
-        }
-
-        // Apps List
-        if (filteredApps.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(32.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        imageVector = Icons.Default.Apps,
-                        contentDescription = null,
-                        tint = TextMuted,
-                        modifier = Modifier.size(48.dp)
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        text = stringResource(R.string.apps_empty),
-                        style = MaterialTheme.typography.bodyLarge.copy(color = TextSecondary)
-                    )
-                }
             }
         } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-                contentPadding = PaddingValues(bottom = 80.dp)
-            ) {
-                items(
-                    items = filteredApps,
-                    key = { it.packageName }
-                ) { rule ->
-                    AppItemRow(
-                        rule = rule,
-                        onToggle = { isSelected ->
-                            viewModel.toggleAppSelection(rule.packageName, isSelected)
-                        }
-                    )
-                }
+            items(
+                items = filteredApps,
+                key = { it.packageName }
+            ) { rule ->
+                AppItemRow(
+                    rule = rule,
+                    onToggle = { isSelected ->
+                        viewModel.toggleAppSelection(rule.packageName, isSelected)
+                    }
+                )
             }
         }
     }

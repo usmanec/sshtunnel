@@ -69,6 +69,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.annotation.StringRes
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -214,6 +215,8 @@ fun MainApp(viewModel: MainViewModel = viewModel()) {
                         label = {
                             Text(
                                 text = stringResource(destination.label),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                                 )
@@ -246,6 +249,8 @@ fun MainApp(viewModel: MainViewModel = viewModel()) {
                         title = {
                             Text(
                                 text = stringResource(currentDestination.title),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
                                 style = MaterialTheme.typography.titleLarge.copy(
                                     fontWeight = FontWeight.Bold,
                                     color = TextPrimary
@@ -289,6 +294,8 @@ fun MainApp(viewModel: MainViewModel = viewModel()) {
                     title = {
                         Text(
                             text = stringResource(currentDestination.title),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                             style = MaterialTheme.typography.titleLarge.copy(
                                 fontWeight = FontWeight.Bold,
                                 color = TextPrimary
@@ -323,6 +330,8 @@ fun MainApp(viewModel: MainViewModel = viewModel()) {
                             label = {
                                 Text(
                                     text = stringResource(destination.label),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
                                     style = MaterialTheme.typography.labelSmall.copy(
                                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                                     )

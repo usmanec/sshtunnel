@@ -219,7 +219,7 @@ fun SettingsScreen(
                     style = MaterialTheme.typography.labelMedium.copy(color = TextSecondary),
                     modifier = Modifier.padding(start = 8.dp, top = 4.dp, bottom = 6.dp)
                 )
-                Row(
+                FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.padding(horizontal = 8.dp)
                 ) {
@@ -298,7 +298,12 @@ fun SettingsScreen(
                     }
 
                     Spacer(modifier = Modifier.height(14.dp))
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    // Not weighted: long labels get their own line instead of wrapping inside the buttons
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
                         Button(
                             onClick = {
                                 OemBatteryOptimizationHelper.requestIgnoreBatteryOptimization(context)
@@ -309,7 +314,6 @@ fun SettingsScreen(
                             ),
                             shape = RoundedCornerShape(10.dp),
                             modifier = Modifier
-                                .weight(1f)
                                 .tvFocusVisual(shape = RoundedCornerShape(10.dp))
                                 .testTag("request_battery_exemption_button")
                         ) {
@@ -317,7 +321,8 @@ fun SettingsScreen(
                                 text = stringResource(if (isBatteryOptimizedIgnored) R.string.btn_recheck else R.string.btn_disable_opt),
                                 color = if (isBatteryOptimizedIgnored) TextPrimary else Color.Black,
                                 fontSize = 12.sp,
-                                fontWeight = FontWeight.SemiBold
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1
                             )
                         }
                         if (!isTv) {
@@ -325,11 +330,10 @@ fun SettingsScreen(
                                 onClick = { OemBatteryOptimizationHelper.openOemAutostartSettings(context) },
                                 shape = RoundedCornerShape(10.dp),
                                 modifier = Modifier
-                                    .weight(1f)
                                     .tvFocusVisual(shape = RoundedCornerShape(10.dp))
                                     .testTag("open_autostart_settings_button")
                             ) {
-                                Text(text = stringResource(R.string.btn_autostart_settings), color = CyanPrimary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                                Text(text = stringResource(R.string.btn_autostart_settings), color = CyanPrimary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
                             }
                         }
                     }
@@ -400,7 +404,7 @@ fun SettingsScreen(
                     colors = ButtonDefaults.buttonColors(containerColor = CyanPrimary),
                     modifier = Modifier.tvFocusVisual(shape = RoundedCornerShape(8.dp))
                 ) {
-                    Text(stringResource(R.string.btn_open_settings), color = Color.Black)
+                    Text(stringResource(R.string.btn_open_settings), color = Color.Black, maxLines = 1)
                 }
             },
             dismissButton = {
@@ -486,7 +490,7 @@ private fun CustomDnsInput(currentDns: String, onApply: (String, (Boolean) -> Un
                 .tvFocusVisual(shape = RoundedCornerShape(10.dp))
                 .testTag("dns_apply_button")
         ) {
-            Text(stringResource(R.string.btn_apply))
+            Text(stringResource(R.string.btn_apply), maxLines = 1)
         }
     }
 }

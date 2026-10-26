@@ -122,7 +122,7 @@ fun ReconnectBanner(viewModel: MainViewModel, modifier: Modifier = Modifier) {
         ) {
             Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
             Spacer(modifier = Modifier.width(6.dp))
-            Text(stringResource(R.string.btn_reconnect))
+            Text(stringResource(R.string.btn_reconnect), maxLines = 1)
         }
     }
 }

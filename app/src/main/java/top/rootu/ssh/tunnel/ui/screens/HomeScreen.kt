@@ -280,8 +280,12 @@ fun HomeScreen(
                         style = MaterialTheme.typography.labelLarge.copy(
                             fontWeight = FontWeight.Bold,
                             color = buttonColor,
-                            letterSpacing = 1.sp
-                        )
+                            letterSpacing = 0.5.sp
+                        ),
+                        // Long translations ("ДОБАВИТЬ СЕРВЕР") wrap inside the circle instead of being cut
+                        textAlign = TextAlign.Center,
+                        maxLines = 2,
+                        modifier = Modifier.padding(horizontal = 14.dp)
                     )
                 }
             }
@@ -476,7 +480,7 @@ private fun ActiveServerCard(
                     modifier = Modifier.size(16.dp)
                 )
                 Spacer(modifier = Modifier.width(4.dp))
-                Text(stringResource(if (server == null) R.string.btn_add else R.string.btn_switch), style = MaterialTheme.typography.labelLarge)
+                Text(stringResource(if (server == null) R.string.btn_add else R.string.btn_switch), style = MaterialTheme.typography.labelLarge, maxLines = 1)
             }
         }
     }
@@ -655,7 +659,7 @@ private fun SplitTunnelingCard(
                         .tvFocusVisual(shape = RoundedCornerShape(10.dp))
                         .testTag("manage_apps_button")
                 ) {
-                    Text(stringResource(R.string.btn_select_apps), style = MaterialTheme.typography.labelLarge)
+                    Text(stringResource(R.string.btn_select_apps), style = MaterialTheme.typography.labelLarge, maxLines = 1)
                 }
             }
         }
