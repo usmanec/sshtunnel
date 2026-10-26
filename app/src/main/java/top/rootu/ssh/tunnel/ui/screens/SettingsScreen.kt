@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Loop
 import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -35,12 +36,14 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -57,6 +60,7 @@ import top.rootu.ssh.tunnel.R
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
@@ -64,6 +68,8 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import top.rootu.ssh.tunnel.data.repository.VpnPrefs
 import top.rootu.ssh.tunnel.ui.MainViewModel
+import top.rootu.ssh.tunnel.ui.MainViewModel.UpdateError
+import top.rootu.ssh.tunnel.ui.MainViewModel.UpdateState
 import top.rootu.ssh.tunnel.ui.components.ReconnectBanner
 import top.rootu.ssh.tunnel.ui.components.SettingSwitchRow
 import top.rootu.ssh.tunnel.ui.components.TvTextField
@@ -353,7 +359,13 @@ fun SettingsScreen(
         }
 
         // ==========================================
-        // 5. SOCKS5 TUNNEL INFO
+        // 5. APP UPDATES (GitHub releases)
+        // ==========================================
+        SectionTitle(stringResource(R.string.section_updates))
+        UpdatesCard(viewModel)
+
+        // ==========================================
+        // 6. SOCKS5 TUNNEL INFO
         // ==========================================
         val socksPort = activeServer?.socksPort ?: 10808
         InfoCard(
@@ -364,7 +376,7 @@ fun SettingsScreen(
         )
 
         // ==========================================
-        // 6. ANDROID TV & ALWAYS-ON VPN GUIDE
+        // 7. ANDROID TV & ALWAYS-ON VPN GUIDE
         // ==========================================
         InfoCard(
             icon = Icons.Default.Tv,
@@ -419,6 +431,117 @@ fun SettingsScreen(
         )
     }
 }
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun UpdatesCard(viewModel: MainViewModel) {
+    val state by viewModel.updateState.collectAsState()
+    LaunchedEffect(Unit) { viewModel.checkForUpdateOnce() }
+
+    SettingsCard {
+        Column(modifier = Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.SystemUpdate, contentDescription = null, tint = CyanPrimary, modifier = Modifier.size(20.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = stringResource(R.string.update_current_version, viewModel.currentVersion),
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold, color = TextPrimary)
+                )
+            }
+
+            val s = state
+            val (statusText, statusColor) = when (s) {
+                UpdateState.Idle -> null to TextSecondary
+                UpdateState.Checking -> stringResource(R.string.update_checking) to TextSecondary
+                UpdateState.UpToDate -> stringResource(R.string.update_up_to_date) to EmeraldSuccess
+                is UpdateState.Available -> stringResource(R.string.update_available, s.info.version, formatSize(s.info.size)) to CyanPrimary
+                is UpdateState.Downloading -> stringResource(R.string.update_downloading, s.info.version) to CyanPrimary
+                is UpdateState.ReadyToInstall -> stringResource(R.string.update_ready, s.info.version) to EmeraldSuccess
+                is UpdateState.NeedsInstallPermission -> stringResource(R.string.update_needs_permission) to AmberWarning
+                is UpdateState.Failed -> {
+                    val base = stringResource(
+                        when (s.error) {
+                            UpdateError.CHECK_FAILED -> R.string.update_error_check
+                            UpdateError.DOWNLOAD_FAILED -> R.string.update_error_download
+                            UpdateError.NOT_THIS_APP -> R.string.update_error_not_this_app
+                            UpdateError.SIGNATURE_MISMATCH -> R.string.update_error_signature
+                            UpdateError.NO_INSTALLER -> R.string.update_error_no_installer
+                            UpdateError.NO_PERMISSION_SCREEN -> R.string.update_error_no_permission_screen
+                        }
+                    )
+                    (if (s.detail.isNullOrBlank()) base else "$base (${s.detail})") to RedError
+                }
+            }
+            if (statusText != null) {
+                Text(text = statusText, style = MaterialTheme.typography.bodyMedium.copy(color = statusColor))
+            }
+
+            if (s is UpdateState.Downloading) {
+                if (s.progress >= 0) {
+                    LinearProgressIndicator(progress = { s.progress / 100f }, color = CyanPrimary, modifier = Modifier.fillMaxWidth())
+                } else {
+                    LinearProgressIndicator(color = CyanPrimary, modifier = Modifier.fillMaxWidth())
+                }
+            }
+
+            val notes = (s as? UpdateState.Available)?.info?.notes
+            if (!notes.isNullOrBlank()) {
+                Text(
+                    text = stringResource(R.string.update_changes),
+                    style = MaterialTheme.typography.labelMedium.copy(color = TextSecondary, fontWeight = FontWeight.SemiBold)
+                )
+                Text(
+                    text = notes.trim(),
+                    style = MaterialTheme.typography.bodySmall.copy(color = TextPrimary, lineHeight = 18.sp),
+                    maxLines = 12,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                when (s) {
+                    is UpdateState.Available -> UpdateButton(stringResource(R.string.btn_update_install), primary = true, tag = "update_download_button") {
+                        viewModel.downloadAndInstallUpdate(s.info)
+                    }
+                    is UpdateState.ReadyToInstall, is UpdateState.NeedsInstallPermission ->
+                        UpdateButton(stringResource(R.string.btn_update_install_now), primary = true, tag = "update_install_button") {
+                            viewModel.installUpdate()
+                        }
+                    else -> Unit
+                }
+                if (s !is UpdateState.Checking && s !is UpdateState.Downloading) {
+                    UpdateButton(stringResource(R.string.btn_update_check), primary = false, tag = "update_check_button") {
+                        viewModel.checkForUpdate()
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun UpdateButton(text: String, primary: Boolean, tag: String, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(10.dp)
+    val modifier = Modifier.tvFocusVisual(shape = shape).testTag(tag)
+    if (primary) {
+        Button(onClick = onClick, shape = shape, colors = ButtonDefaults.buttonColors(containerColor = CyanPrimary), modifier = modifier) {
+            Text(text, color = Color.Black, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+        }
+    } else {
+        OutlinedButton(onClick = onClick, shape = shape, modifier = modifier) {
+            Text(text, color = CyanPrimary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+        }
+    }
+}
+
+@Composable
+private fun formatSize(bytes: Long): String =
+    if (bytes >= 1024 * 1024) stringResource(R.string.size_mb, bytes / (1024.0 * 1024.0))
+    else stringResource(R.string.size_kb, (bytes / 1024).coerceAtLeast(1))
 
 @Composable
 private fun SectionTitle(text: String) {

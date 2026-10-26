@@ -296,4 +296,25 @@
     <string name="err_timeout">Истекло время подключения к %1$s:%2$d</string>
     <string name="err_refused">В подключении на порт %1$d отказано</string>
     <string name="err_unknown_host">Неизвестный хост: %1$s</string>
+    <!-- Обновления -->
+    <string name="section_updates">Обновления</string>
+    <string name="update_current_version">Установлена версия: %1$s</string>
+    <string name="update_checking">Проверка обновлений…</string>
+    <string name="update_up_to_date">Установлена последняя версия.</string>
+    <string name="update_available">Доступна новая версия %1$s (%2$s).</string>
+    <string name="update_downloading">Загрузка %1$s…</string>
+    <string name="update_ready">Версия %1$s загружена и проверена.</string>
+    <string name="update_needs_permission">Разрешите установку приложений от SSH Tunnel в открывшемся окне и нажмите «Установить».</string>
+    <string name="update_changes">Что нового</string>
+    <string name="update_error_check">Не удалось проверить обновления.</string>
+    <string name="update_error_download">Не удалось загрузить обновление.</string>
+    <string name="update_error_not_this_app">Загруженный файл не является обновлением этого приложения.</string>
+    <string name="update_error_signature">Обновление подписано другим ключом и не может заменить установленное приложение.</string>
+    <string name="update_error_no_installer">Не найдено приложение для установки обновления.</string>
+    <string name="update_error_no_permission_screen">На устройстве нет экрана разрешения установки приложений. Разрешите её через ADB или настройки устройства.</string>
+    <string name="btn_update_check">Проверить</string>
+    <string name="btn_update_install">Загрузить и установить</string>
+    <string name="btn_update_install_now">Установить</string>
+    <string name="size_mb">%1$.1f МБ</string>
+    <string name="size_kb">%1$d КБ</string>
 </resources>

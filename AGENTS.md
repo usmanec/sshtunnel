@@ -34,6 +34,9 @@ gradle :app:assembleRelease     # R8 + shrinkResources включены
   - `tools/sandbox-check/compile` — компиляция **всех** исходников против android-all + Compose Desktop
     со стабами Android-only API.
 - Release собирается с R8. Новая библиотека с рефлексией → правила в `app/proguard-rules.pro`.
+- Версия берётся из git (`versionCode` = число коммитов, `versionName` = `git describe --tags`),
+  поэтому нужна полная история. Релиз — тег `vX.Y.Z` → `.github/workflows/release.yml` подписывает APK
+  и публикует GitHub Release, его находит встроенное обновление. См. [docs/RELEASES.md](docs/RELEASES.md).
 
 ## Карта кода
 
@@ -56,6 +59,8 @@ app/src/main/java/
     │   └── net/                 Чистый Kotlin без Android: Packets, TcpProxySession, Socks5Client,
     │                            DnsMessages/DnsCache, Cidr, ByteQueue, GeoIpLookup (внешний IP)
     ├── receiver/BootReceiver    Автозапуск после загрузки
+    ├── update/                  ReleaseInfo (разбор релиза GitHub, чистый Kotlin), UpdateManager (загрузка,
+    │                            проверка подписи, установка через FileProvider)
     └── ui/
         ├── MainViewModel.kt     Единая VM для всех экранов
         ├── screens/             Home, Apps, Servers, Logs, Settings

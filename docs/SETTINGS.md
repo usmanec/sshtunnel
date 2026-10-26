@@ -19,6 +19,8 @@
 
 Выбор приложений хранится в Room (`app_routing_rules.isSelected`) и тоже применяется при создании TUN.
 
+Раздел **Updates** не хранит настроек: проверка обновлений с GitHub описана в [RELEASES.md](RELEASES.md).
+
 ## Профиль сервера (`SshServerProfile`, Room)
 
 | Поле | По умолчанию | Примечание |

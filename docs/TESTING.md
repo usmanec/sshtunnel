@@ -13,6 +13,7 @@
 | `vpn/SocksTunnelEndToEndTest` | TCP приложения → TcpProxySession → SOCKS5 → транспорт; отказ при упавшем транспорте |
 | `ExampleRobolectricTest` | дефолты настроек, форматирование статистики, английский по умолчанию и русский перевод (Robolectric, `@Config(qualifiers = "ru")`) |
 | `data/model/AuthTypeTest` | порядок методов входа (ключ раньше пароля), стабильность имён в Room |
+| `update/ReleaseInfoTest` | разбор релиза GitHub: draft/prerelease, выбор `.apk`, сравнение версий с суффиксами `git describe` |
 
 `FakeApp` в `vpn/net` изображает TCP-стек приложения по ту сторону TUN — используйте его для новых
 тестов сетевого ядра.
@@ -34,8 +35,8 @@ cd tools/sandbox-check/net-tests && gradle --no-daemon test
 cd tools/sandbox-check/compile && gradle --no-daemon compileKotlin compileJava
 ```
 
-- `net-tests` — запускает тесты из `app/src/test/java/top/rootu/ssh/tunnel/vpn` на чистой JVM
-  (компилирует только `vpn/net/*`, `Socks5ProxyServer.kt`, `TunnelTransport.kt`).
+- `net-tests` — запускает тесты из `app/src/test/java/top/rootu/ssh/tunnel/vpn` и `.../update` на чистой JVM
+  (компилирует только `vpn/net/*`, `Socks5ProxyServer.kt`, `TunnelTransport.kt`, `update/ReleaseInfo.kt`).
 - `compile` — компилирует **все** исходники `app/src/main` против Robolectric `android-all`
   (классы Android) и JetBrains Compose Desktop 1.7 (тот же API, что androidx Compose 1.7 /
   Material3 1.3 из BOM 2024.09.00). Android-only API (ComponentActivity, LocalContext, Room,
@@ -59,3 +60,5 @@ cd tools/sandbox-check/compile && gradle --no-daemon compileKotlin compileJava
 6. Смена Wi-Fi ↔ Ethernet/мобильная сеть — переподключение за несколько секунд.
 7. Обход LAN: при включённой опции доступен локальный NAS/роутер из выбранного приложения.
 8. ТВ — по чек-листу из [TV_UI.md](TV_UI.md).
+9. Обновление: поставить сборку со старым тегом, Settings → Updates → «Загрузить и установить»;
+   на Android 8+ появляется запрос разрешения, после него — системный установщик.
