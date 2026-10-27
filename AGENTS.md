@@ -41,6 +41,7 @@ gradle :app:assembleRelease     # R8 + shrinkResources включены
 ## Карта кода
 
 ```
+server/sshtunnel-user.sh         Интерактивный скрипт для сервера: пользователь только для ssh -D (docs/SERVER.md)
 app/src/main/java/
 ├── com/jcraft/jsch/ChannelWindowControl.java   Доступ к package-private окну канала JSch (см. NETWORKING)
 └── top/rootu/ssh/tunnel/

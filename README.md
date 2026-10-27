@@ -52,6 +52,13 @@ ssh -D 1080 user@gateway.corp.example
 
 ## Быстрый старт
 
+0. На сервере заведите пользователя, который умеет только пробрасывать порты (без оболочки и SFTP):
+   ```bash
+   curl -fsSLO https://raw.githubusercontent.com/usmanec/sshtunnel/main/server/sshtunnel-user.sh
+   sudo bash sshtunnel-user.sh
+   ```
+   Скрипт спросит способ входа (ключ, пароль или оба), при желании ограничит адреса и выведет данные
+   для приложения. Подробнее — [docs/SERVER.md](docs/SERVER.md).
 1. Добавьте сервер: **Servers → Add Server**, укажите адрес, пользователя и пароль или ключ.
    Нажмите **Test Connection**.
 2. Выберите приложения: **Apps** → отметьте нужные (по умолчанию в тоннель идут только они).
@@ -84,5 +91,6 @@ gradle :app:assembleRelease      # релиз (R8 включён)
 - [docs/NETWORKING.md](docs/NETWORKING.md) — путь трафика, TCP-стек, DNS, управление потоком SSH.
 - [docs/SETTINGS.md](docs/SETTINGS.md) — настройки и где они хранятся.
 - [docs/TV_UI.md](docs/TV_UI.md) — правила UI для управления пультом.
+- [docs/SERVER.md](docs/SERVER.md) — подготовка сервера и скрипт пользователя для тоннеля.
 - [docs/RELEASES.md](docs/RELEASES.md) — версии, выпуск релиза, обновление внутри приложения.
 - [docs/TESTING.md](docs/TESTING.md) — тесты и проверка без Android SDK.
