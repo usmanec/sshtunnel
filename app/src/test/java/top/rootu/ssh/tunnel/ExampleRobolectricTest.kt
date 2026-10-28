@@ -78,6 +78,7 @@ class ExampleRobolectricTest {
     assertEquals("Стандартный Android", OemBatteryOptimizationHelper.brandName(context, OemBrand.GENERIC))
     assertEquals("Главная", context.getString(R.string.nav_home))
     assertEquals("Подключено к srv", context.getString(R.string.notif_connected, "srv"))
+    assertEquals("Сервер 3", context.getString(R.string.new_server_name, 3))
   }
 
   @Test
@@ -85,6 +86,7 @@ class ExampleRobolectricTest {
     val context = ApplicationProvider.getApplicationContext<Context>()
     assertEquals("Home", context.getString(R.string.nav_home))
     assertEquals("Connected to srv", context.getString(R.string.notif_connected, "srv"))
+    assertEquals("Server 3", context.getString(R.string.new_server_name, 3))
   }
 
   @Test

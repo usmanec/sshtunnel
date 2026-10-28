@@ -27,8 +27,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import top.rootu.ssh.tunnel.ui.util.tvCardFocusable
 import top.rootu.ssh.tunnel.ui.util.tvFocusVisual
+import top.rootu.ssh.tunnel.ui.util.tvCardFocusable
 import kotlinx.coroutines.delay
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -535,9 +535,14 @@ private fun ServerEditDialog(
     }
     var showRawKeyField by remember { mutableStateOf(false) }
     var passphrase by remember { mutableStateOf(server.passphrase) }
-    var socksPortText by remember { mutableStateOf(server.socksPort.toString()) }
+    // 0 = no fixed port: the field stays empty and a free port is picked at every connection
+    var socksPortText by remember { mutableStateOf(if (server.socksPort > 0) server.socksPort.toString() else "") }
     var compression by remember { mutableStateOf(server.compression) }
     var keepAliveText by remember { mutableStateOf(server.keepAliveIntervalSeconds.toString()) }
+    // Open when something there differs from the defaults, so it is not hidden by accident
+    var advancedExpanded by remember {
+        mutableStateOf(server.socksPort > 0 || server.keepAliveIntervalSeconds != 15 || server.compression)
+    }
     var showPassword by remember { mutableStateOf(false) }
 
     // File Picker for SSH Private Key file
@@ -567,7 +572,7 @@ private fun ServerEditDialog(
     }
 
     val portValid = portText.toIntOrNull()?.let { it in 1..65535 } == true
-    val socksPortValid = socksPortText.toIntOrNull()?.let { it in 1024..65535 } == true
+    val socksPortValid = socksPortText.isEmpty() || socksPortText.toIntOrNull()?.let { it in 1024..65535 } == true
     val keepAliveValid = keepAliveText.toIntOrNull()?.let { it in 0..3600 } == true
     val keyValid = !authType.usesKey || privateKey.isNotBlank()
     // With key + password both are required; a plain password may be empty (rare "none"-style setups)
@@ -576,7 +581,7 @@ private fun ServerEditDialog(
 
     fun buildCurrentProfile(): SshServerProfile {
         val port = portText.toIntOrNull() ?: 22
-        val socksPort = socksPortText.toIntOrNull() ?: 10808
+        val socksPort = socksPortText.toIntOrNull() ?: 0
         val keepAlive = keepAliveText.toIntOrNull() ?: 15
         return server.copy(
             name = if (name.isBlank()) host.trim() else name.trim(),
@@ -877,20 +882,40 @@ private fun ServerEditDialog(
                     )
                 }
 
+                // Advanced: SOCKS port, keepalive and compression rarely need changes
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .tvCardFocusable(shape = RoundedCornerShape(10.dp)) { advancedExpanded = !advancedExpanded }
+                        .padding(horizontal = 8.dp, vertical = 10.dp)
+                        .testTag("advanced_toggle")
                 ) {
+                    Text(
+                        text = stringResource(R.string.section_advanced),
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold, color = TextPrimary),
+                        modifier = Modifier.weight(1f)
+                    )
+                    Icon(
+                        imageVector = if (advancedExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                        contentDescription = null,
+                        tint = TextSecondary
+                    )
+                }
+
+                // An invalid value is never hidden
+                if (advancedExpanded || !socksPortValid || !keepAliveValid) {
                     TvTextField(
                         value = socksPortText,
                         onValueChange = { socksPortText = it.filter { ch -> ch.isDigit() } },
                         label = stringResource(R.string.field_socks_port),
+                        placeholder = stringResource(R.string.socks_port_placeholder),
                         singleLine = true,
                         isError = !socksPortValid,
-                        supportingText = if (!socksPortValid) "1024–65535" else null,
+                        supportingText = if (socksPortValid) stringResource(R.string.socks_port_hint) else "1024–65535",
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
                         modifier = Modifier
-                            .weight(1f)
+                            .fillMaxWidth()
                             .tvFocusVisual(shape = RoundedCornerShape(12.dp))
                     )
                     TvTextField(
@@ -899,19 +924,19 @@ private fun ServerEditDialog(
                         label = stringResource(R.string.field_keepalive),
                         singleLine = true,
                         isError = !keepAliveValid,
+                        supportingText = stringResource(R.string.keepalive_hint),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
                         modifier = Modifier
-                            .weight(1f)
+                            .fillMaxWidth()
                             .tvFocusVisual(shape = RoundedCornerShape(12.dp))
                     )
+                    SettingSwitchRow(
+                        title = stringResource(R.string.compression_title),
+                        description = stringResource(R.string.compression_desc),
+                        checked = compression,
+                        onCheckedChange = { compression = it }
+                    )
                 }
-
-                SettingSwitchRow(
-                    title = stringResource(R.string.compression_title),
-                    description = stringResource(R.string.compression_desc),
-                    checked = compression,
-                    onCheckedChange = { compression = it }
-                )
 
                 // Dedicated Connection Test Action
                 Card(

@@ -131,7 +131,7 @@
     <string name="btn_save_server">Save Server</string>
     <string name="btn_test_and_save">Test &amp; Save Server</string>
     <string name="btn_save_anyway">Save anyway</string>
-    <string name="new_server_name">New SSH Server</string>
+    <string name="new_server_name">Server %1$d</string>
     <string name="test_in_progress">Testing SSH connection and login to %1$s:%2$d…</string>
     <string name="test_ok">Connection and login verified. Latency: %1$d ms</string>
     <string name="test_failed_generic">Connection test failed</string>
@@ -319,7 +319,11 @@
     <string name="btn_update_install_now">Install</string>
     <string name="size_mb">%1$.1f MB</string>
     <string name="size_kb">%1$d KB</string>
-    <!-- Automatic SOCKS port -->
+    <!-- Server editor: advanced section, automatic SOCKS port -->
+    <string name="section_advanced">Advanced</string>
+    <string name="socks_port_placeholder">Auto</string>
+    <string name="socks_port_hint">Leave empty: a free port is picked at every connection. Set a port only if other apps on this device should use the SOCKS5 proxy 127.0.0.1:port.</string>
+    <string name="keepalive_hint">Seconds between SSH keepalive checks, 0 = off. Three missed checks in a row mean the connection is lost.</string>
     <string name="socks_port_auto_badge">SOCKS: auto port</string>
     <string name="socks_info_text_auto">Equivalent to: ssh -D &lt;port&gt; %1$s\n\nThe local SOCKS5 port is picked automatically at every connection and is shown here while the tunnel is connected. Set a fixed port in the server\'s advanced settings if other apps should use it.</string>
     <!-- Switching servers while connected (make-before-break) -->

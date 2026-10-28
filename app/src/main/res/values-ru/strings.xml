@@ -129,7 +129,7 @@
     <string name="btn_save_server">Сохранить</string>
     <string name="btn_test_and_save">Проверить и сохранить</string>
     <string name="btn_save_anyway">Сохранить без проверки</string>
-    <string name="new_server_name">Новый SSH-сервер</string>
+    <string name="new_server_name">Сервер %1$d</string>
     <string name="test_in_progress">Проверка подключения и входа на %1$s:%2$d…</string>
     <string name="test_ok">Подключение и вход проверены. Задержка: %1$d мс</string>
     <string name="test_failed_generic">Проверка подключения не удалась</string>
@@ -317,7 +317,11 @@
     <string name="btn_update_install_now">Установить</string>
     <string name="size_mb">%1$.1f МБ</string>
     <string name="size_kb">%1$d КБ</string>
-    <!-- Автоматический порт SOCKS -->
+    <!-- Редактор сервера: расширенные настройки, автоматический порт SOCKS -->
+    <string name="section_advanced">Расширенные</string>
+    <string name="socks_port_placeholder">Авто</string>
+    <string name="socks_port_hint">Оставьте пустым: при каждом подключении выбирается свободный порт. Задавайте порт, только если другие приложения на устройстве должны использовать SOCKS5-прокси 127.0.0.1:порт.</string>
+    <string name="keepalive_hint">Интервал проверок соединения SSH в секундах, 0 — выключено. Три пропущенные проверки подряд означают обрыв.</string>
     <string name="socks_port_auto_badge">SOCKS: авто-порт</string>
     <string name="socks_info_text_auto">Аналог команды: ssh -D &lt;порт&gt; %1$s\n\nЛокальный порт SOCKS5 выбирается автоматически при каждом подключении и показывается здесь, пока тоннель подключён. Если он нужен другим приложениям, задайте постоянный порт в расширенных настройках сервера.</string>
     <!-- Смена сервера при подключённом тоннеле (сначала новый, потом отключение старого) -->

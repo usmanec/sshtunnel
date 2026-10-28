@@ -31,6 +31,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -210,17 +211,22 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun openAddServerDialog() {
-        _editingServer.value = SshServerProfile(
-            name = app.getString(R.string.new_server_name),
-            host = "",
-            port = 22,
-            username = "root",
-            socksPort = 10808,
-            keepAliveIntervalSeconds = 15
-        )
-        _testConnectionResult.value = null
-        _isTestFailed.value = false
-        _isServerDialogOpen.value = true
+        viewModelScope.launch {
+            // From the database: allServers is empty while no screen collects it
+            val servers = repository.allServers.first()
+            _editingServer.value = SshServerProfile(
+                name = defaultServerName(servers),
+                host = "",
+                port = 22,
+                username = "root",
+                // Empty in the form: a free port is picked at every connection
+                socksPort = 0,
+                keepAliveIntervalSeconds = 15
+            )
+            _testConnectionResult.value = null
+            _isTestFailed.value = false
+            _isServerDialogOpen.value = true
+        }
     }
 
     fun openEditServerDialog(server: SshServerProfile) {
@@ -235,6 +241,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _editingServer.value = null
         _testConnectionResult.value = null
         _isTestFailed.value = false
+    }
+
+    /** "Server N", where N is the number the new server gets in the list (skipping names in use). */
+    private fun defaultServerName(servers: List<SshServerProfile>): String {
+        val names = servers.mapTo(HashSet()) { it.name }
+        var number = servers.size + 1
+        while (app.getString(R.string.new_server_name, number) in names) number++
+        return app.getString(R.string.new_server_name, number)
     }
 
     /** Saves without a successful test (e.g. the server is temporarily unreachable). */
