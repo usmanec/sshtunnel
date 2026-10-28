@@ -9,7 +9,7 @@
 # Piping also works (questions are read from the terminal):
 #   curl -fsSL https://raw.githubusercontent.com/usmanec/sshtunnel/main/server/sshtunnel-user.sh | sudo bash
 #
-# Language follows LANG (ru/en); override with SSHTUNNEL_LANG=ru|en.
+# The first question is the language (the default follows LANG); SSHTUNNEL_LANG=ru|en skips it.
 # Every user gets its own "Match User" block: a drop-in file in /etc/ssh/sshd_config.d
 # (OpenSSH 8.2+ with Include) or a marked block at the end of /etc/ssh/sshd_config.
 # The config is validated with "sshd -t" and rolled back if it is rejected.
@@ -115,6 +115,22 @@ choose() {
             printf '%s' "$answer"
             return
         fi
+    done
+}
+
+# Asked first, in both languages; skipped when SSHTUNNEL_LANG is set
+choose_language() {
+    local default=1 answer
+    if [ -n "${SSHTUNNEL_LANG:-}" ]; then return; fi
+    if [ "$RU" = 1 ]; then default=2; fi
+    printf '\n%sLanguage / Язык%s\n  1) English\n  2) Русский\n' "$BOLD" "$RESET" >&2
+    while true; do
+        printf 'Choose / Выберите [%s]: ' "$default" >&2
+        IFS= read -r -u 3 answer || die "input closed / ввод прерван"
+        case "${answer:-$default}" in
+            1) RU=0; return ;;
+            2) RU=1; return ;;
+        esac
     done
 }
 
@@ -550,10 +566,14 @@ $output"
 # ---------- main ----------
 
 main() {
+    # "list" asks nothing, so it also works without a terminal
+    if [ "${1:-}" != list ]; then
+        open_tty
+        choose_language
+    fi
     check_system
     WORK_DIR=$(mktemp -d)
     chmod 700 "$WORK_DIR"
-    if [ "${1:-}" != list ]; then open_tty; fi
 
     case "${1:-}" in
         add) cmd_add; return ;;
