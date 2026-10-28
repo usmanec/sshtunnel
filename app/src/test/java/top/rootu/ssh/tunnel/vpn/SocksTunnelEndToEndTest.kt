@@ -47,7 +47,8 @@ class SocksTunnelEndToEndTest {
     }
 
     private val socks = Socks5ProxyServer(
-        port = ServerSocket(0).use { it.localPort },
+        // 0 = any free port, as for profiles without a fixed SOCKS port
+        port = 0,
         transportProvider = { transport },
         onBytesTransferred = { _, down -> downloaded.addAndGet(down) },
         onConnectionChange = {},
@@ -66,7 +67,7 @@ class SocksTunnelEndToEndTest {
         key = app.key,
         syn = app.syn(windowScale = 8),
         output = { app.output.add(it) },
-        connector = { ip, port -> Socks5Client.connect(socks.port, ip, port) },
+        connector = { ip, port -> Socks5Client.connect(socks.boundPort, ip, port) },
         executor = executor,
         onClosed = {}
     )

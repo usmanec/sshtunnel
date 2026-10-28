@@ -15,7 +15,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
@@ -38,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import top.rootu.ssh.tunnel.ui.MainViewModel
 import top.rootu.ssh.tunnel.ui.theme.AmberWarning
 import top.rootu.ssh.tunnel.ui.theme.CyanPrimary
+import top.rootu.ssh.tunnel.ui.theme.RedError
 import top.rootu.ssh.tunnel.ui.theme.TextPrimary
 import top.rootu.ssh.tunnel.ui.theme.TextSecondary
 import top.rootu.ssh.tunnel.ui.util.tvFocusVisual
@@ -123,6 +126,53 @@ fun ReconnectBanner(viewModel: MainViewModel, modifier: Modifier = Modifier) {
             Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
             Spacer(modifier = Modifier.width(6.dp))
             Text(stringResource(R.string.btn_reconnect), maxLines = 1)
+        }
+    }
+}
+
+/**
+ * Server switch while connected: progress while the new session is being established (the current
+ * tunnel keeps working), or the reason it failed (the current tunnel is still in use).
+ */
+@Composable
+fun ServerSwitchBanner(viewModel: MainViewModel, modifier: Modifier = Modifier) {
+    val switchingTo by viewModel.switchingTo.collectAsState()
+    val switchError by viewModel.switchError.collectAsState()
+    val target = switchingTo
+    val error = switchError
+    if (target == null && error == null) return
+    val color = if (target != null) CyanPrimary else RedError
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(color.copy(alpha = 0.15f))
+            .padding(horizontal = 14.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        if (target != null) {
+            CircularProgressIndicator(color = CyanPrimary, strokeWidth = 2.dp, modifier = Modifier.size(18.dp))
+            Text(
+                text = stringResource(R.string.switch_in_progress, target.name),
+                style = MaterialTheme.typography.bodyMedium.copy(color = CyanPrimary, fontWeight = FontWeight.Medium),
+                modifier = Modifier.weight(1f)
+            )
+        } else {
+            Text(
+                text = error.orEmpty(),
+                style = MaterialTheme.typography.bodyMedium.copy(color = RedError, fontWeight = FontWeight.Medium),
+                modifier = Modifier.weight(1f)
+            )
+            OutlinedButton(
+                onClick = { viewModel.dismissSwitchError() },
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier
+                    .tvFocusVisual(shape = RoundedCornerShape(10.dp))
+                    .testTag("dismiss_switch_error_button")
+            ) {
+                Text(stringResource(R.string.btn_close), color = TextPrimary, maxLines = 1)
+            }
         }
     }
 }

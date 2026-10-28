@@ -52,6 +52,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val vpnStats: StateFlow<VpnStats> = SshVpnService.vpnStats
     val logs: StateFlow<List<ConnectionLogEntry>> = SshVpnService.logs
 
+    /** Server the running tunnel uses and the port its SOCKS5 proxy actually listens on. */
+    val tunnelServer: StateFlow<SshServerProfile?> = SshVpnService.activeServer
+    val socksPort: StateFlow<Int?> = SshVpnService.socksPort
+
+    /** Make-before-break server switch: target in progress, or why the last one failed. */
+    val switchingTo: StateFlow<SshServerProfile?> = SshVpnService.switchingTo
+    val switchError: StateFlow<String?> = SshVpnService.switchError
+
+    fun dismissSwitchError() {
+        SshVpnService.clearSwitchError()
+    }
+
     val allServers: StateFlow<List<SshServerProfile>> = repository.allServers
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -176,15 +188,23 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /**
-     * Makes [id] the active server. If the VPN is running on another server it switches over
-     * right away (no VPN permission prompt is needed while the VPN is already up).
+     * Makes [id] the active server. While the tunnel is running it switches over right away
+     * (no permission prompt is needed then); the service marks the server active only once the
+     * new session is up, so a failed switch leaves the current server selected.
      */
     fun setActiveServer(context: Context, id: Long) {
         viewModelScope.launch {
-            repository.setActiveServer(id)
-            val running = SshVpnService.isRunning
-            if (running && SshVpnService.activeServer.value?.id != id) {
-                startVpn(context.applicationContext, id)
+            if (SshVpnService.isRunning) {
+                if (SshVpnService.activeServer.value?.id != id) {
+                    startVpn(context.applicationContext, id)
+                } else if (SshVpnService.switchingTo.value != null) {
+                    // Back to the server in use: drop the pending switch instead of reconnecting
+                    context.applicationContext.startService(
+                        Intent(context.applicationContext, SshVpnService::class.java).setAction(SshVpnService.ACTION_CANCEL_SWITCH)
+                    )
+                }
+            } else {
+                repository.setActiveServer(id)
             }
         }
     }
@@ -433,7 +453,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         // While connecting or reconnecting the path is about to change: keep what is shown
         if (!connected && status != VpnStatus.DISCONNECTED && status != VpnStatus.ERROR) return
         val server = if (connected) SshVpnService.activeServer.value ?: return else null
-        val key = server?.let { "tunnel:${it.id}:${it.socksPort}" } ?: "direct"
+        val socksPort = if (connected) SshVpnService.socksPort.value ?: return else 0
+        val key = server?.let { "tunnel:${it.id}:$socksPort" } ?: "direct"
         val fresh = System.currentTimeMillis() - externalIpCheckedAt < EXTERNAL_IP_TTL_MS
         if (!force && key == externalIpKey && fresh && _externalIp.value.info != null) return
 
@@ -446,7 +467,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             viaTunnel = server != null
         )
         val connector: (String, Int) -> Socket = if (server != null) {
-            { host, port -> Socks5Client.connectHost(server.socksPort, host, port, 15_000) }
+            { host, port -> Socks5Client.connectHost(socksPort, host, port, 15_000) }
         } else {
             { host, port -> Socket().apply { connect(InetSocketAddress(host, port), 10_000) } }
         }

@@ -27,8 +27,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import top.rootu.ssh.tunnel.ui.util.tvFocusVisual
 import top.rootu.ssh.tunnel.ui.util.tvCardFocusable
+import top.rootu.ssh.tunnel.ui.util.tvFocusVisual
 import kotlinx.coroutines.delay
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -90,6 +90,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.widthIn
 import android.content.ActivityNotFoundException
+import top.rootu.ssh.tunnel.ui.components.ServerSwitchBanner
 import top.rootu.ssh.tunnel.ui.components.SettingSwitchRow
 import top.rootu.ssh.tunnel.ui.components.TvTextField
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -118,6 +119,8 @@ fun ServersScreen(
     modifier: Modifier = Modifier
 ) {
     val servers by viewModel.allServers.collectAsState()
+    val tunnelServer by viewModel.tunnelServer.collectAsState()
+    val socksPort by viewModel.socksPort.collectAsState()
     val isDialogOpen by viewModel.isServerDialogOpen.collectAsState()
     val editingServer by viewModel.editingServer.collectAsState()
     val testResult by viewModel.testConnectionResult.collectAsState()
@@ -152,6 +155,8 @@ fun ServersScreen(
                     .fillMaxSize()
                     .padding(horizontal = 16.dp, vertical = 12.dp)
             ) {
+                ServerSwitchBanner(viewModel, modifier = Modifier.padding(bottom = 10.dp))
+
                 // Header with the add action on top: easy to reach with the D-pad from any card
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -226,6 +231,7 @@ fun ServersScreen(
                             val isFirst = servers.firstOrNull()?.id == server.id
                             ServerItemCard(
                                 server = server,
+                                runningSocksPort = socksPort.takeIf { tunnelServer?.id == server.id },
                                 focusRequester = if (isFirst) firstServerFocusRequester else null,
                                 onSelect = { viewModel.setActiveServer(context, server.id) },
                                 onEdit = { viewModel.openEditServerDialog(server) },
@@ -315,6 +321,8 @@ fun ServersScreen(
 @Composable
 private fun ServerItemCard(
     server: SshServerProfile,
+    /** Port the running tunnel listens on, when it uses this server. */
+    runningSocksPort: Int?,
     focusRequester: FocusRequester? = null,
     onSelect: () -> Unit,
     onEdit: () -> Unit,
@@ -422,7 +430,11 @@ private fun ServerItemCard(
                     }
                     Badge {
                         Text(
-                            text = "SOCKS: 127.0.0.1:${server.socksPort}",
+                            text = when {
+                                runningSocksPort != null -> "SOCKS: 127.0.0.1:$runningSocksPort"
+                                server.socksPort > 0 -> "SOCKS: 127.0.0.1:${server.socksPort}"
+                                else -> stringResource(R.string.socks_port_auto_badge)
+                            },
                             style = MaterialTheme.typography.labelSmall.copy(
                                 fontFamily = RobotoMonoFontFamily,
                                 color = TextMuted

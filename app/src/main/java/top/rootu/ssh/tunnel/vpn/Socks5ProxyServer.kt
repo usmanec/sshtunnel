@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger
  * immediately (and the TUN router answers the app with a TCP reset).
  */
 class Socks5ProxyServer(
+    /** 0 = any free port, see [boundPort]. */
     val port: Int,
     private val transportProvider: () -> TunnelTransport?,
     private val onBytesTransferred: (upload: Long, download: Long) -> Unit,
@@ -35,6 +36,9 @@ class Socks5ProxyServer(
     }
 
     private var serverSocket: ServerSocket? = null
+
+    /** The listening port: differs from [port] when [port] is 0 (any free port). */
+    val boundPort: Int get() = serverSocket?.localPort ?: port
     private var executor: ExecutorService? = null
     private val activeConnections = AtomicInteger(0)
     private val clientSockets = Collections.synchronizedSet(HashSet<Socket>())

@@ -105,6 +105,7 @@ fun SettingsScreen(
     val dnsServer by viewModel.dnsServer.collectAsState()
     val bypassLan by viewModel.bypassLan.collectAsState()
     val activeServer by viewModel.activeServer.collectAsState()
+    val runningSocksPort by viewModel.socksPort.collectAsState()
 
     var showOemGuideDialog by remember { mutableStateOf(false) }
     var isBatteryOptimizedIgnored by remember {
@@ -367,11 +368,17 @@ fun SettingsScreen(
         // ==========================================
         // 6. SOCKS5 TUNNEL INFO
         // ==========================================
-        val socksPort = activeServer?.socksPort ?: 10808
+        // The running tunnel's port, else the fixed port of the selected server; none = picked per connection
+        val socksPort = runningSocksPort ?: activeServer?.socksPort?.takeIf { it > 0 }
+        val sshTarget = activeServer?.let { "${it.username}@${it.host}" } ?: "user@server"
         InfoCard(
             icon = Icons.Default.Info,
             title = stringResource(R.string.socks_info_title),
-            text = stringResource(R.string.socks_info_text, socksPort, activeServer?.let { "${it.username}@${it.host}" } ?: "user@server"),
+            text = if (socksPort != null) {
+                stringResource(R.string.socks_info_text, socksPort, sshTarget)
+            } else {
+                stringResource(R.string.socks_info_text_auto, sshTarget)
+            },
             monospace = true
         )
 

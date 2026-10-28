@@ -317,4 +317,13 @@
     <string name="btn_update_install_now">Установить</string>
     <string name="size_mb">%1$.1f МБ</string>
     <string name="size_kb">%1$d КБ</string>
+    <!-- Автоматический порт SOCKS -->
+    <string name="socks_port_auto_badge">SOCKS: авто-порт</string>
+    <string name="socks_info_text_auto">Аналог команды: ssh -D &lt;порт&gt; %1$s\n\nЛокальный порт SOCKS5 выбирается автоматически при каждом подключении и показывается здесь, пока тоннель подключён. Если он нужен другим приложениям, задайте постоянный порт в расширенных настройках сервера.</string>
+    <!-- Смена сервера при подключённом тоннеле (сначала новый, потом отключение старого) -->
+    <string name="switch_in_progress">Подключение к %1$s… Текущий тоннель работает, пока новый не будет готов.</string>
+    <string name="switch_failed">Не удалось переключиться на %1$s: %2$s. Остаётся подключение через %3$s.</string>
+    <string name="log_switch_start">Переключение на %1$s: подключаемся, пока %2$s остаётся активным</string>
+    <string name="log_switch_failed">Не удалось переключиться на %1$s, остаёмся на %2$s</string>
+    <string name="log_switch_cancelled">Переключение сервера отменено, текущий тоннель не изменён</string>
 </resources>

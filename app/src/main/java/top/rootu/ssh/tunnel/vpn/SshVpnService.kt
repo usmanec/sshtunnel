@@ -28,6 +28,7 @@ import top.rootu.ssh.tunnel.data.model.VpnStatus
 import top.rootu.ssh.tunnel.data.repository.VpnPrefs
 import top.rootu.ssh.tunnel.vpn.net.Cidr
 import top.rootu.ssh.tunnel.vpn.net.Packets
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -57,12 +58,17 @@ import java.util.concurrent.atomic.AtomicLong
  * reconnect the routed apps get immediate TCP resets instead of silently falling back to the
  * direct connection, so traffic never leaks around the tunnel (kill switch).
  *
+ * Switching servers (or re-applying settings) while connected is make-before-break: the new SSH
+ * session is established first while the current tunnel keeps working; only then the pipeline is
+ * replaced and the old session closed. If the new server fails, the current tunnel stays as is.
+ *
  * Lifecycle state is only touched on the main thread; blocking work runs on IO dispatchers.
  */
 class SshVpnService : VpnService() {
 
     private val serviceScope = CoroutineScope(Dispatchers.Main.immediate + SupervisorJob())
     private var tunnelJob: Job? = null
+    private var switchJob: Job? = null
     private var statsJob: Job? = null
     private var pingJob: Job? = null
 
@@ -74,6 +80,9 @@ class SshVpnService : VpnService() {
     private var sshClient: SshTunnelClient? = null
     @Volatile
     private var connectingClient: SshTunnelClient? = null
+    /** New session being prepared by [switchTunnel] while the current one still carries traffic. */
+    @Volatile
+    private var switchingClient: SshTunnelClient? = null
 
     @Volatile
     private var isScreenOn = true
@@ -95,6 +104,8 @@ class SshVpnService : VpnService() {
     companion object {
         const val ACTION_CONNECT = "com.rootu.ssh.tunnel.vpn.ACTION_CONNECT"
         const val ACTION_DISCONNECT = "com.rootu.ssh.tunnel.vpn.ACTION_DISCONNECT"
+        /** Abandons a server switch in progress; the current tunnel is not touched. */
+        const val ACTION_CANCEL_SWITCH = "com.rootu.ssh.tunnel.vpn.ACTION_CANCEL_SWITCH"
         const val EXTRA_SERVER_ID = "extra_server_id"
 
         private const val NOTIFICATION_ID = 2024
@@ -112,6 +123,22 @@ class SshVpnService : VpnService() {
 
         private val _activeServer = MutableStateFlow<SshServerProfile?>(null)
         val activeServer: StateFlow<SshServerProfile?> = _activeServer.asStateFlow()
+
+        /** Port the local SOCKS5 proxy actually listens on (random when the profile leaves it empty). */
+        private val _socksPort = MutableStateFlow<Int?>(null)
+        val socksPort: StateFlow<Int?> = _socksPort.asStateFlow()
+
+        /** Server a running tunnel is switching to; the current tunnel stays up meanwhile. */
+        private val _switchingTo = MutableStateFlow<SshServerProfile?>(null)
+        val switchingTo: StateFlow<SshServerProfile?> = _switchingTo.asStateFlow()
+
+        /** Localized reason the last switch failed (the previous tunnel kept running). */
+        private val _switchError = MutableStateFlow<String?>(null)
+        val switchError: StateFlow<String?> = _switchError.asStateFlow()
+
+        fun clearSwitchError() {
+            _switchError.value = null
+        }
 
         private val _logs = MutableStateFlow<List<ConnectionLogEntry>>(emptyList())
         val logs: StateFlow<List<ConnectionLogEntry>> = _logs.asStateFlow()
@@ -151,6 +178,15 @@ class SshVpnService : VpnService() {
                 shutdown()
                 return START_NOT_STICKY
             }
+            ACTION_CANCEL_SWITCH -> {
+                if (switchJob?.isActive == true) {
+                    log(getString(R.string.log_switch_cancelled))
+                    cancelSwitch()
+                }
+                // Started only to deliver this: nothing to keep alive
+                if (tunnelJob == null) stopSelf()
+                return START_NOT_STICKY
+            }
             ACTION_CONNECT -> {
                 startForegroundCompat(buildNotification(getString(R.string.notif_starting)))
                 startTunnel(intent.getLongExtra(EXTRA_SERVER_ID, -1L))
@@ -177,13 +213,16 @@ class SshVpnService : VpnService() {
     // -------------------------------------------------------------------------------------------
 
     private fun startTunnel(serverId: Long) {
+        // A working session is kept until the new one is ready
+        if (tunnelJob?.isActive == true && sshClient?.isConnected == true) {
+            switchTunnel(serverId)
+            return
+        }
+        cancelSwitch()
         val previous = tunnelJob
         tunnelJob = serviceScope.launch {
             previous?.cancelAndJoin()
-            val profile = withContext(Dispatchers.IO) {
-                val dao = AppDatabase.getInstance(applicationContext).serverDao()
-                (if (serverId > 0) dao.getServerById(serverId) else null) ?: dao.getActiveServerSync()
-            }
+            val profile = loadProfile(serverId)
             if (profile == null) {
                 log(getString(R.string.log_no_server), isError = true)
                 failAndStop(getString(R.string.reason_no_server))
@@ -193,10 +232,91 @@ class SshVpnService : VpnService() {
         }
     }
 
-    private suspend fun runTunnel(profile: SshServerProfile) {
+    private suspend fun loadProfile(serverId: Long): SshServerProfile? = withContext(Dispatchers.IO) {
+        val dao = AppDatabase.getInstance(applicationContext).serverDao()
+        (if (serverId > 0) dao.getServerById(serverId) else null) ?: dao.getActiveServerSync()
+    }
+
+    /** Make-before-break: connects to the new server first; on failure the current tunnel stays. */
+    private fun switchTunnel(serverId: Long) {
+        cancelSwitch()
+        switchJob = serviceScope.launch {
+            val profile = loadProfile(serverId) ?: return@launch
+            val currentName = _activeServer.value?.name.orEmpty()
+            _switchError.value = null
+            _switchingTo.value = profile
+            log(getString(R.string.log_switch_start, profile.name, currentName))
+
+            val client = newSshClient()
+            switchingClient = client
+            var handedOver = false
+            try {
+                // No wake lock here: the user is switching in the app, and the lock belongs to reconnects
+                val result = runInterruptible(Dispatchers.IO) { client.connect(tunedProfile(profile)) }
+                if (result.isFailure) {
+                    val reason = result.exceptionOrNull()
+                        ?.let { SshTunnelClient.describeError(this@SshVpnService, it, profile) }
+                        .orEmpty()
+                    _switchError.value = getString(R.string.switch_failed, profile.name, reason, currentName)
+                    log(getString(R.string.log_switch_failed, profile.name, currentName), level = LogLevel.WARN)
+                    return@launch
+                }
+
+                // The new session is up: now replace the pipeline, which closes the old session
+                val previous = tunnelJob
+                tunnelJob = serviceScope.launch {
+                    try {
+                        previous?.cancelAndJoin()
+                    } catch (e: CancellationException) {
+                        // Disconnected before the new pipeline took the session over
+                        Thread { client.disconnect() }.start()
+                        throw e
+                    }
+                    runTunnel(profile, preconnected = client)
+                }
+                handedOver = true
+            } finally {
+                // A newer switch may already be running: only clear what belongs to this one
+                if (switchingClient === client) switchingClient = null
+                if (_switchingTo.value === profile) _switchingTo.value = null
+                if (!handedOver) Thread { client.disconnect() }.start()
+            }
+        }
+    }
+
+    private fun cancelSwitch() {
+        switchJob?.cancel()
+        switchJob = null
+        // Aborts a connect in progress (JSch does not react to thread interrupts)
+        switchingClient?.let { client -> Thread { client.disconnect() }.start() }
+        switchingClient = null
+        _switchingTo.value = null
+    }
+
+    private fun newSshClient() =
+        SshTunnelClient(this, { socket -> protect(socket) }) { msg, isErr -> log(msg, isErr) }
+
+    /** The battery saver stretches the keepalive interval. */
+    private fun tunedProfile(profile: SshServerProfile): SshServerProfile {
+        val prefs = VpnPrefs.get(this)
+        val keepAlive = if (prefs.getBoolean(VpnPrefs.AGGRESSIVE_BATTERY_SAVER, false)) {
+            profile.keepAliveIntervalSeconds.coerceAtLeast(60)
+        } else {
+            profile.keepAliveIntervalSeconds
+        }
+        return profile.copy(keepAliveIntervalSeconds = keepAlive)
+    }
+
+    /** [preconnected] is a session already established by [switchTunnel]. */
+    private suspend fun runTunnel(profile: SshServerProfile, preconnected: SshTunnelClient? = null) {
+        // stopPipeline() and shutdown() close it if the pipeline fails before using it
+        connectingClient = preconnected
         _activeServer.value = profile
-        _vpnStatus.value = VpnStatus.CONNECTING
+        if (preconnected == null) _vpnStatus.value = VpnStatus.CONNECTING
         _vpnStats.value = VpnStats()
+        withContext(Dispatchers.IO) {
+            AppDatabase.getInstance(applicationContext).serverDao().setActiveServer(profile.id)
+        }
         sessionBytesIn.set(0)
         sessionBytesOut.set(0)
         (getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager).cancel(ERROR_NOTIFICATION_ID)
@@ -224,52 +344,60 @@ class SshVpnService : VpnService() {
                 return
             }
             socksServer = socks
-            log(getString(R.string.log_socks_listening, profile.socksPort))
+            // Port 0 in the profile = a free port picked by the system at every connection
+            val socksPort = socks.boundPort
+            _socksPort.value = socksPort
+            log(getString(R.string.log_socks_listening, socksPort))
 
             // 2. TUN interface (replaces a previous one without a gap when switching servers)
             val tun = establishTun(profile) ?: return
             val oldTun = vpnInterface
             vpnInterface = tun
             if (oldTun != null) runCatching { oldTun.close() }
-            packetHandler = VpnTunPacketHandler(tun, profile.socksPort) {
+            packetHandler = VpnTunPacketHandler(tun, socksPort) {
                 log(getString(R.string.log_tun_closed), level = LogLevel.WARN)
             }.also { it.start() }
-            log(getString(R.string.log_tun_started, profile.socksPort))
+            log(getString(R.string.log_tun_started, socksPort))
 
             startStatsLoop(profile)
             startPingLoop(profile)
 
             // 3. SSH session with automatic reconnects
-            runSshLoop(profile)
+            runSshLoop(profile, preconnected)
         } finally {
             withContext(NonCancellable) { stopPipeline(closeTun = false) }
         }
     }
 
-    private suspend fun runSshLoop(profile: SshServerProfile) {
-        val prefs = VpnPrefs.get(this)
-        val keepAlive = if (prefs.getBoolean(VpnPrefs.AGGRESSIVE_BATTERY_SAVER, false)) {
-            profile.keepAliveIntervalSeconds.coerceAtLeast(60)
-        } else {
-            profile.keepAliveIntervalSeconds
-        }
-        val tunedProfile = profile.copy(keepAliveIntervalSeconds = keepAlive)
+    private suspend fun runSshLoop(profile: SshServerProfile, preconnected: SshTunnelClient?) {
+        val tunedProfile = tunedProfile(profile)
         var attempt = 0
+        var pending = preconnected
 
         while (currentCoroutineContext().isActive) {
-            _vpnStatus.value = if (attempt == 0) VpnStatus.CONNECTING else VpnStatus.RECONNECTING
-            val client = SshTunnelClient(this, { socket -> protect(socket) }) { msg, isErr -> log(msg, isErr) }
-            connectingClient = client
-            acquireWakeLock()
-            val result = try {
-                runInterruptible(Dispatchers.IO) { client.connect(tunedProfile) }
-            } finally {
-                releaseWakeLock()
-                connectingClient = null
+            val client: SshTunnelClient
+            val result: Result<Unit>
+            if (pending != null) {
+                // Already connected by switchTunnel()
+                client = pending
+                pending = null
+                result = Result.success(Unit)
+            } else {
+                _vpnStatus.value = if (attempt == 0) VpnStatus.CONNECTING else VpnStatus.RECONNECTING
+                client = newSshClient()
+                connectingClient = client
+                acquireWakeLock()
+                result = try {
+                    runInterruptible(Dispatchers.IO) { client.connect(tunedProfile) }
+                } finally {
+                    releaseWakeLock()
+                    connectingClient = null
+                }
             }
 
             if (result.isSuccess) {
                 sshClient = client
+                connectingClient = null
                 sshNetwork = defaultNetwork
                 attempt = 0
                 connectStartTime = System.currentTimeMillis()
@@ -410,6 +538,7 @@ class SshVpnService : VpnService() {
         packetHandler = null
         socksServer?.stop()
         socksServer = null
+        _socksPort.value = null
         val clients = listOfNotNull(sshClient, connectingClient)
         sshClient = null
         connectingClient = null
@@ -432,6 +561,7 @@ class SshVpnService : VpnService() {
     }
 
     private fun shutdown() {
+        cancelSwitch()
         tunnelJob?.cancel()
         tunnelJob = null
         stopPipeline(closeTun = true)
@@ -615,6 +745,7 @@ class SshVpnService : VpnService() {
         }
         networkCallback = null
         releaseWakeLock()
+        cancelSwitch()
         tunnelJob?.cancel()
         stopPipeline(closeTun = true)
         if (_vpnStatus.value != VpnStatus.ERROR) _vpnStatus.value = VpnStatus.DISCONNECTED

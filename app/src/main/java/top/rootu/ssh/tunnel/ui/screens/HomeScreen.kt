@@ -76,6 +76,7 @@ import androidx.compose.ui.unit.sp
 import top.rootu.ssh.tunnel.data.model.LogLevel
 import top.rootu.ssh.tunnel.data.model.RoutingPolicy
 import top.rootu.ssh.tunnel.ui.components.ReconnectBanner
+import top.rootu.ssh.tunnel.ui.components.ServerSwitchBanner
 import androidx.compose.ui.text.style.TextAlign
 import top.rootu.ssh.tunnel.data.model.VpnStatus
 import top.rootu.ssh.tunnel.ui.MainViewModel
@@ -109,7 +110,10 @@ fun HomeScreen(
     val externalIp by viewModel.externalIp.collectAsState()
 
     // Re-check when the path changes: direct <-> tunnel, or another server
-    androidx.compose.runtime.LaunchedEffect(vpnStatus) {
+    // A make-before-break switch keeps the status CONNECTED: also react to the server and port
+    val tunnelServer by viewModel.tunnelServer.collectAsState()
+    val socksPort by viewModel.socksPort.collectAsState()
+    androidx.compose.runtime.LaunchedEffect(vpnStatus, tunnelServer?.id, socksPort) {
         viewModel.refreshExternalIp()
     }
 
@@ -166,6 +170,7 @@ fun HomeScreen(
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
 
+        ServerSwitchBanner(viewModel)
         ReconnectBanner(viewModel)
 
         // Top Status Badge

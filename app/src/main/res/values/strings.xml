@@ -319,4 +319,13 @@
     <string name="btn_update_install_now">Install</string>
     <string name="size_mb">%1$.1f MB</string>
     <string name="size_kb">%1$d KB</string>
+    <!-- Automatic SOCKS port -->
+    <string name="socks_port_auto_badge">SOCKS: auto port</string>
+    <string name="socks_info_text_auto">Equivalent to: ssh -D &lt;port&gt; %1$s\n\nThe local SOCKS5 port is picked automatically at every connection and is shown here while the tunnel is connected. Set a fixed port in the server\'s advanced settings if other apps should use it.</string>
+    <!-- Switching servers while connected (make-before-break) -->
+    <string name="switch_in_progress">Connecting to %1$s… The current tunnel keeps working until the new one is ready.</string>
+    <string name="switch_failed">Could not switch to %1$s: %2$s. Still connected via %3$s.</string>
+    <string name="log_switch_start">Switching to %1$s: connecting while %2$s stays active</string>
+    <string name="log_switch_failed">Switch to %1$s failed, staying on %2$s</string>
+    <string name="log_switch_cancelled">Server switch cancelled, the current tunnel is unchanged</string>
 </resources>

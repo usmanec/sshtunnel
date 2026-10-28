@@ -43,12 +43,25 @@ Room-база: `fallbackToDestructiveMigration`, версия 1. При изме
 onStartCommand
  ├─ ACTION_CONNECT           startForeground → startTunnel(serverId)
  ├─ ACTION_DISCONNECT        shutdown()
+ ├─ ACTION_CANCEL_SWITCH     cancelSwitch(): отказ от переключения, текущий тоннель не трогается
  └─ null / android.net.VpnService (Always-on, перезапуск системой) → startTunnel(-1 = активный сервер)
 
-startTunnel: отменяет предыдущий tunnelJob и ждёт его, загружает профиль, runTunnel(profile)
+startTunnel
+ ├─ SSH подключён → switchTunnel(serverId)   (смена сервера или новые настройки, make-before-break)
+ └─ иначе: отменяет предыдущий tunnelJob и ждёт его, загружает профиль, runTunnel(profile)
+
+switchTunnel (switchJob, switchingTo для UI)
+ 1. новая SSH-сессия к целевому серверу, старый тоннель работает как раньше
+ 2. ошибка → switchError (баннер на главной и в списке серверов), старый тоннель остаётся,
+    активный сервер в базе не меняется
+ 3. успех → новый tunnelJob: отменяет старый (его сессия закрывается) и вызывает
+    runTunnel(profile, preconnected) — первый проход runSshLoop берёт готовую сессию,
+    статус остаётся CONNECTED. Разрыв — только на время запуска SOCKS и замены TUN (миллисекунды);
+    одинаковый фиксированный порт у серверов не мешает: старый SOCKS закрывается до запуска нового
 
 runTunnel
- 1. Socks5ProxyServer.start()        — порт занят → ERROR, стоп
+ 0. активный сервер в базе = profile (UI отмечает его только после успешного переключения)
+ 1. Socks5ProxyServer.start()        — порт 0 = свободный; фиксированный занят → ERROR, стоп
  2. establishTun()                   — новый TUN заменяет старый без разрыва (смена сервера)
  3. VpnTunPacketHandler.start(), stats/ping циклы
  4. runSshLoop():
